@@ -1,0 +1,47 @@
+---
+title: "Questão 13 - Lista 1"
+author: "Leonardo Prior Migliorini"
+format: html
+editor: visual
+---
+
+```{r}
+#| eval: false
+#| warning: false
+#| error: false
+
+# Importação dos dados ------------------------------------------------------- #
+
+dados <- readxl::read_excel(
+  "C:\\Users\\leona\\Documents\\GitHub\\Atividades_aulas\\Analise_Regressao\\Dados-Rio-Caiapo.xls"
+)
+
+# Filtrando dados ------------------------------------------------------------ #
+
+dados_ajuste <- dados |>
+  dplyr::filter_all(
+    dplyr::all_vars(
+      !is.na(.)
+    )
+  )
+```
+
+### Análise descritiva dos dados
+
+
+
+### Correlação das variáveis
+
+```{r}
+
+```
+
+### Ajuste de MRLM
+
+### Testes de Hipóteses
+
+### Explicabilidade do modelo
+
+### Predição do valor faltante
+
+### Teste Reset de Ramsey
