@@ -6,7 +6,7 @@ editor: visual
 ---
 
 ```{r}
-#| eval: false
+#| include: false
 #| warning: false
 #| error: false
 
@@ -28,15 +28,37 @@ dados_ajuste <- dados |>
 
 ### Análise descritiva dos dados
 
-
-
 ### Correlação das variáveis
 
+Uma das maneiras que podemos verificar as correlações das covariáveis com a variável de interesse, assim como a correlação entre as cováriaveis é através de um corplot. O plot de um corplot para as variáveis do banco de dados trabalhado é dado abaixo:
+
+
 ```{r}
+#| echo: false
+#| warning: false
+#| error: false
+
+#Cálculo da correlação das variáveis:
+data_cor <- cor(dados_ajuste)
+
+#corrplot das variáveis:
+corrplot::corrplot(
+    data_cor, method = "number", type = "upper", 
+  )
 
 ```
 
 ### Ajuste de MRLM
+
+```{r}
+#| echo: false
+#| warning: false
+#| error: false
+
+lm()
+
+```
+
 
 ### Testes de Hipóteses
 
