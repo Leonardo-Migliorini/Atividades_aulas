@@ -10,6 +10,10 @@ editor: visual
 #| warning: false
 #| error: false
 
+# Carregando pacotes úteis para a análise ------------------------------------ #
+
+library(ggplot2)
+
 # Importação dos dados ------------------------------------------------------- #
 
 dados <- readxl::read_excel(
@@ -24,14 +28,24 @@ dados_ajuste <- dados |>
       !is.na(.)
     )
   )
+
+attach(dados_ajuste)
 ```
 
 ### Análise descritiva dos dados
 
+```{r}
+#| echo: false
+#| warning: false
+#| error: false
+
+
+```
+
+
 ### Correlação das variáveis
 
 Uma das maneiras que podemos verificar as correlações das covariáveis com a variável de interesse, assim como a correlação entre as cováriaveis é através de um corplot. O plot de um corplot para as variáveis do banco de dados trabalhado é dado abaixo:
-
 
 ```{r}
 #| echo: false
@@ -50,20 +64,47 @@ corrplot::corrplot(
 
 ### Ajuste de MRLM
 
+Os resultados do ajuste do modelo de regressão linera múltipla considerando a vazão média do mensal como variável resposta é dado abaixo:
+
 ```{r}
 #| echo: false
 #| warning: false
 #| error: false
 
-lm()
+modelo_ajustado <- lm(
+  Qmed ~ chuva1 + chuva2
+  )
 
+summary(modelo_ajustado)
 ```
-
 
 ### Testes de Hipóteses
 
+* Resltados teste $t$:
+
+Pelo teste $t$, ao nível de significância de $5\%$, conclui-se que o $\beta_1$ vinculado a covariável chuva1 é significativo para o modelo, já o $\beta_2$, vinculado a covariável chuva2 não foi significativo e poderia ser removido do modelo.
+
+* Resultados teste $F$:
+
+Como temos um $p-valor < \alpha$, rejeita-se $H_0$. Logo, pelo teste $F$ ao nível de significância de $5\%$, conlcui-se que pelo menos um dos regressores $(\beta's)$ foi significativo no modelo.
+
 ### Explicabilidade do modelo
+
+Podemos ver na saída de código do ajuste do modelo que o coeficente de variação $R^{2}$ é igual a $0,352$, ou seja $35,2\%$ da variação da vazão média mensal pode ser explicada pelas convariáveis chuva1 e chuva2, as quais foram consideradas no modelo. 
 
 ### Predição do valor faltante
 
+Para o dado faltante, tinhamos para chuva1 de $26,4$ e para chuva2 de $66,1$. Assim o valor predito para a vazão média do mês nesse caso seria de $118,0591$.
+
 ### Teste Reset de Ramsey
+
+Abaixo temos a saída de código de um teste Reset de Ramsey:
+
+```{r}
+#| echo: false
+#| warning: false
+#| error: false
+
+lmtest::resettest(modelo_ajustado)
+```
+Considerando um $\alpha = 0,05$, não rejeita-se $H_0$. Ou seja, o modelo que ajustamos anteriormente não está corretamnete especificado e portanto devemos tentar remover covariáveis desnecessárias e/ou inserir novas covariáveis e testar a significância do novo ajuste.
