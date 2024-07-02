@@ -1,0 +1,30 @@
+---
+title: "Questão 14 - Lista 1"
+author: "Leonardo Prior Migliorini"
+format: html
+editor: visual
+---
+
+```{r}
+#| include: false
+#| warning: false
+#| error: false
+
+
+# Importação dos dados ------------------------------------------------------- #
+
+dados <- readxl::read_excel(
+  "C:\\Users\\leona\\Documents\\GitHub\\Atividades_aulas\\Analise_Regressao\\Dados-Rio-Caiapo.xls"
+)
+
+# Filtrando dados ------------------------------------------------------------ #
+
+dados_ajuste <- dados |>
+  dplyr::filter_all(
+    dplyr::all_vars(
+      !is.na(.)
+    )
+  )
+
+attach(dados_ajuste)
+```
