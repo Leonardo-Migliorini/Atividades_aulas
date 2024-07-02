@@ -1,0 +1,654 @@
+---
+title: "Atividade Prática"
+author: "Leonardo Prior Migliorini"
+format: html
+editor: visual
+---
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+# Pacotes utilizados -----------------------------------------------------------
+
+library(hnp) # pacote para envelope simulado
+library(lmtest) # teste reset
+library(car) # para teste de multicolinearidade (fatores de inflacao de variancia)
+library(tseries) # teste de Jarque-Bera
+
+# Importando dados -------------------------------------------------------------
+
+dados <- read.table("dados-trabalho1.txt", h = TRUE) 
+n <- dim(dados)
+```
+
+## Análise descritiva dos dados
+
+Nosso banco de dados tem `r n[1]` observações e `r n[2]` variáveis, sendo uma delas a variável de interesse e as demais, covariáveis para incluirmos nos ajustes dos modelos. Primeiramente, vamos verificar quais os tipos de covariáveis temos em nosso banco de dados.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+summary(dados) # medidas descritivas do banco de dados
+
+```
+
+Podemos observar que a covariável $x_1$ é do tipo *dummy*, enquanto que as demais são todas contínuas positivas.
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+# Transformando a covariável x_1 em tipo fator ou dummy
+dados |> dplyr::mutate(
+  x1 = as.factor(x1)
+)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Análise de correlação entre as variáveis
+cor_dados <- cor(dados) 
+corrplot::corrplot(cor_dados, 
+         type = "upper", 
+         method = "color", 
+         col = RColorBrewer::brewer.pal(n = 8, name = "RdYlBu"), # Color palette
+         addCoef.col = "black", # Add correlation coefficients
+         tl.col = "black", # Text label color
+         tl.srt = 45, # Text label rotation
+         number.cex = 0.7, # Size of the correlation coefficient numbers
+         cl.cex = 0.7, # Size of the color legend text
+         title = "Gráfico de correlação das variáveis", 
+         mar = c(0,0,1,0)) # Title margin
+```
+
+Através do *corrplot* acima, nota-se que a covariável $x_6$ é a que apresenta a maior correlação com a variável de interesse. Percebe-se também um provável problema de mutlicolinearidade aproximada entre as covariáveis $x_3$ e $x_4$ pela sua alta correlação de $0,96$.
+
+## Modelo incialmente ajustado
+
+Inicialmente consideraremos um modelo ajustado com todas as covariáveis disponíveis em nosso banco de dados. O ajuste é dado abaixo:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## ajustando o modelo com todas as covariáveis
+
+fit <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7,data=dados) # ajustando o modelo
+summary(fit) # printado a saída do modelo
+```
+
+Podemos observar que algumas das covariáveis consideradas não foram significativas no modelo inicial, portanto, utilizaremos a função `step` para nos indicar um modelo melhor. A saída da função, assim como o modelo sugerido são dados abaixo:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+step(fit) # selecionando o melhor modelo baseado no AIC e stepwise
+```
+
+Podemos ver que as covariáveis $x_4$ e $x_5$ foram desconsideradas no novo ajuste. Seguimos então, ajustando esse novo modelo e posteriormente realizando a análise de diagnósticos para verificar a adequação do ajuste.
+
+## Modelo reajustado
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+fit2 <- lm(y ~ x1 + x2 + x3 + x6 + x7, data=dados) # ajustando o novo modelo
+summary(fit2)
+
+```
+
+Note que algumas covariáveis não são muito significativas para o modelo, entretanto, prosseguiremos para a análise de diagnósticos a fim de verificar se as suposições do modelo foram satisfeitas e, consequentemente, se os resultados dos testes de hipóteses não sofreram nenhuma distorção devido a desvios de normalidade. Além disso, iremos verificar se não há pontos possivelmente influentes no modelo.
+
+## Análise de diagnóstico
+
+### Suposições do modelo
+
+Vamos começar testando as suposições do modelo para verificar se os resultados dos testes de hipóteses são confiáveis.
+
+Testanto \[S0\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+##### Testando as suposições do modelo
+
+## [S0] O modelo estah corretamente especificado
+## [S1] A media dos erros eh zero
+## [s2] Homoscedasticidade dos erros
+## [S3] Nao autocorrelacao
+## [S4] Ausencia de Multicolinearidade
+## [S5] Normalidade dos erros
+
+## Obs.: Para testes de hipoteses, se p-value < alpha (5%)
+## entao rejeita a hipotese nula (H0)
+
+## Testa [S0]
+## Teste RESET de especificacao
+## H0: O modelo estah corretamente especificado
+resettest(fit2)
+
+```
+
+Testanto \[S1\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S1]
+## Teste t para a média dos errros
+## H0: média dos erros eh igual a zero
+t.test(resid(fit2),mu=0,alternative="two.sided")
+```
+
+Testanto \[S2\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [s2]
+## Teste de Bressch-Pagan (Koenker) de Heteroscedasticidade
+## H0: erros sao homoscedasticos
+bptest(fit2, studentize = TRUE)
+```
+
+Testanto \[S3\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S3]
+## Teste de Durbin-Watson de autocorrelacao
+## H0: : Nao hah autocorrelacao
+dwtest(fit2)
+# acf(rstudent(fit))
+```
+
+Testanto \[S4\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S4]
+## Usa Fatores de Inflacao de Variancia para detectar multicolinearidade
+## Regra de bolso: vif > 10 indica multicolinearidade. vif=1 seria o ideal.
+vif(fit2)
+```
+
+Testanto \[S5\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S5]
+## Teste Jarque-Bera de Normalidade
+## H0: Os erros possuem distribuicao normal
+jarque.bera.test(resid(fit2))
+```
+
+Note que todos os testes de hipóstese obtiveram um $P-valor$ maior que $\alpha = 0,05$. Logo, todos os testes não rejeitaram $H_0$, ou seja, as suposições do modelo foram satisfeitas. Em relação aos VIFs, como todos se encontram muito próximos de $1$, conclui-se que o modelo não tem problemas de multicolinearidade aproximada, ou seja, $[S_4]$ também é satisfeita.
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+# Cálculo das medidas de diagnóstico
+
+# com a seguinte funcao se obtem varias medidas de influencia
+im2 <- influence.measures(fit2)
+n1 <- length(dados$y)
+
+# Alavancagem
+hatvalues(fit2)
+h_bar <- fit2$rank / n1
+limite_ala <- 2*h_bar
+# which(hatvalues(fit) > limite_ala)
+
+# DFFIT
+dffits(fit2)
+limite_dffits <- 2*sqrt(fit2$rank / n1)
+which(abs(dffits(fit2))>limite_dffits)
+
+# DFBETA
+dfbetas(fit2) # cada beta tem seu DF
+dfb1<-dfbetas(fit2)[,1]
+dfb2<-dfbetas(fit2)[,2]
+dfb3<-dfbetas(fit2)[,3]
+dfb4<-dfbetas(fit2)[,4]
+dfb5<-dfbetas(fit2)[,5]
+dfb6<-dfbetas(fit2)[,6]
+limite_dfbeta <- 2/sqrt(n1)
+
+# distancia de Cook
+cooks.distance(fit2)
+limite_cook <- 4/(n1-fit2$rank )
+
+# residuo
+residuo <- rstudent(fit2) # residuo studentizado
+which(abs(residuo)>3)
+
+```
+
+### Alavancagem
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot Alavancagem
+abline(plot(hatvalues(fit2),ylab="Alavancagem"),
+       col="red", h=limite_ala,lty=2)
+
+```
+
+No gráfico acima, podemos notar alguns pontos de alavanca, sendo a obrservação $23$ a mais discrepante das demais.
+
+### DFFITS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot DFFITS
+abline(plot(dffits(fit2),ylab="DFFITS"),
+       col="red", h=c(-limite_dffits,limite_dffits),lty=2)
+```
+
+Podemos ver que a observação $23$ também tem alta influência sobre seu próprio valor ajustado, nesse caso, também se encontrando bem dispersa das demais observações.
+
+### DFBETAS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+par(mfrow = c(2, 3))
+abline(plot(dfb1,ylab="DFBETA 1"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb2,ylab="DFBETA 2"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb3,ylab="DFBETA 3"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb4,ylab="DFBETA 4"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb5,ylab="DFBETA 5"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb6,ylab="DFBETA 6"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+```
+
+Podemos notar que a observação $23$ também é muito influente sobre $\beta1$, $\beta3$, $\beta5$ e $\beta6$. Para os demais parâmetros de regressão, não observamos pontos com comportamento muito influente.
+
+
+### Distância de Cook
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot distância de Cook
+abline(plot(cooks.distance(fit2),ylab="Distancia de Cook"),
+       col="red", h=limite_cook,lty=2)
+
+```
+
+Mais uma vez, a observação $23$ se destaca como um ponto de influência sobre o ajuste geral do modelo.
+
+### Resíduos
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+par(mfrow = c(2, 2))
+
+#Plots Resíduos
+plot(residuo,type='p',pch="+",main="Residuos",xlab="indices", ylim = c(-3,3)) # plota os residuos do modelo
+abline(h=c(-2,0,2),lty=3) # inclui linhas horizontais no grafico
+
+hist(residuo) # histograma dos residuos
+
+# envelope simulado baseado nos residuos studentizados
+hnp(fit2,resid.type="student",halfnormal = F) # envelope simulado
+
+```
+
+Nos resíduos, não notamos nenhuma medida muito discrepante, mas podemos notar que a observação $23$ é a mais discrepante no primeiro gráfico, quase ultrapassando o intervalo de -3 a 3.
+
+## Novo Ajuste
+
+Nesse caso, devido à alta influência da observação $23$ em diversos aspectos do modelo, vamos optar por removê-la de nosso conjunto de dados e, então, reajustar os modelos do início utilizando a função `step`. O modelo recomendado é dado abaixo:
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+dados_new <-dados[-23,] 
+fit3 <- lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7, data=dados_new) # ajustando o novo modelo
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+step(fit3) # selecionando o melhor modelo baseado no AIC e stepwise
+```
+
+O modelo selecionado considerou apenas as covariáveis $x_1$, $x_3$ e $x_6$. O ajuste deste modelo é dado abaixo:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+fit4 <- lm(y ~ x1 + x3 + x6, data=dados_new) # ajustando o novo modelo
+summary(fit4)
+```
+
+Partimos agora para a análise de diagnóstico desse novo ajuste.
+
+## Análise de diagnóstico
+
+### Suposições do modelo
+
+Começaremos novamente testando as suposições do modelo.
+
+Testanto \[S0\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+##### Testando as suposições do modelo
+
+## [S0] O modelo estah corretamente especificado
+## [S1] A media dos erros eh zero
+## [s2] Homoscedasticidade dos erros
+## [S3] Nao autocorrelacao
+## [S4] Ausencia de Multicolinearidade
+## [S5] Normalidade dos erros
+
+## Obs.: Para testes de hipoteses, se p-value < alpha (5%)
+## entao rejeita a hipotese nula (H0)
+
+## Testa [S0]
+## Teste RESET de especificacao
+## H0: O modelo estah corretamente especificado
+resettest(fit4)
+
+```
+
+Testanto \[S1\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S1]
+## Teste t para a média dos errros
+## H0: média dos erros eh igual a zero
+t.test(resid(fit4),mu=0,alternative="two.sided")
+```
+
+Testanto \[S2\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [s2]
+## Teste de Bressch-Pagan (Koenker) de Heteroscedasticidade
+## H0: erros sao homoscedasticos
+bptest(fit4, studentize = TRUE)
+```
+
+Testanto \[S3\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S3]
+## Teste de Durbin-Watson de autocorrelacao
+## H0: : Nao hah autocorrelacao
+dwtest(fit4)
+# acf(rstudent(fit))
+```
+
+Testanto \[S4\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S4]
+## Usa Fatores de Inflacao de Variancia para detectar multicolinearidade
+## Regra de bolso: vif > 10 indica multicolinearidade. vif=1 seria o ideal.
+vif(fit4)
+```
+
+Testanto \[S5\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S5]
+## Teste Jarque-Bera de Normalidade
+## H0: Os erros possuem distribuicao normal
+jarque.bera.test(resid(fit4))
+```
+
+Mais uma vez, todos os testes de hipóstese obtiveram um $P-valor$ maior que $\alpha = 0,05$. Portanto, as suposições do modelo foram satisfeitas. Novamente os VIFs se encontram extremamente próximos de $1$ logo, $[S_4]$ também é satisfeita.
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+# Cálculo das medidas de diagnóstico
+
+# com a seguinte funcao se obtem varias medidas de influencia
+im2 <- influence.measures(fit4)
+n1 <- length(dados_new$y)
+
+# Alavancagem
+hatvalues(fit4)
+h_bar <- fit4$rank / n1
+limite_ala <- 2*h_bar
+# which(hatvalues(fit4) > limite_ala)
+
+# DFFIT
+dffits(fit4)
+limite_dffits <- 2*sqrt(fit4$rank / n1)
+# which(abs(dffits(fit4))>limite_dffits)
+
+# DFBETA
+dfbetas(fit4) # cada beta tem seu DF
+dfb1<-dfbetas(fit4)[,1]
+dfb2<-dfbetas(fit4)[,2]
+dfb3<-dfbetas(fit4)[,3]
+dfb4<-dfbetas(fit4)[,4]
+limite_dfbeta <- 2/sqrt(n1)
+
+# distancia de Cook
+cooks.distance(fit4)
+limite_cook <- 4/(n1-fit4$rank )
+
+# residuo
+residuo <- rstudent(fit4) # residuo studentizado
+# which(abs(residuo)>3)
+
+```
+
+### Alavancagem
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot Alavancagem
+abline(plot(hatvalues(fit4),ylab="Alavancagem"),
+       col="red", h=limite_ala,lty=2)
+
+```
+
+Novamente, temos a presença de alguns pontos de alavanca, sendo a observação $63$ a mais discrepante e única preocupante até o momento.
+
+### DFFITS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot DFFITS
+abline(plot(dffits(fit4),ylab="DFFITS"),
+       col="red", h=c(-limite_dffits,limite_dffits),lty=2)
+```
+
+Aqui, não temos nenhum indício significativo de observações influentes sobre seu próprio valor ajustado.
+
+### DFBETAS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+par(mfrow = c(2, 2))
+abline(plot(dfb1,ylab="DFBETA 1"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb2,ylab="DFBETA 2"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb3,ylab="DFBETA 3"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfb4,ylab="DFBETA 4"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+```
+
+Também não temos nenhuma observação muito influente em relação aos parâmetros de regressão.
+
+### Distância de Cook
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot distância de Cook
+abline(plot(cooks.distance(fit4),ylab="Distancia de Cook"),
+       col="red", h=limite_cook,lty=2)
+
+```
+
+Não há pontos de muita influência sobre o ajuste em geral do modelo.
+
+### Resíduos
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+par(mfrow = c(2, 2))
+
+#Plots Resíduos
+plot(residuo,type='p',pch="+",main="Residuos",xlab="indices", ylim = c(-3,3)) # plota os residuos do modelo
+abline(h=c(-2,0,2),lty=3) # inclui linhas horizontais no grafico
+
+hist(residuo) # histograma dos residuos
+
+# envelope simulado baseado nos residuos studentizados
+hnp(fit4,resid.type="student",halfnormal = F) # envelope simulado
+
+```
+
+No primeiro gráfico não observamos nenhum valor fora do esperado, ou seja, nenhum valor discrepante. Podemos ver que os resíduos aparentam apresentar normalidade pelo histograma, e a maioria dos pontos se encontram dentro das bandas de confiança do invelope simulado. 
+
+Assim, podemos concluir que o modelo atual está bem ajustado e não necessita de mais reajustes. Logo, este será o nosso modelo final.
+
+## Predição de alguns valores
+
+Por fim, faremos a predição para alguns valores hipotéticos gerados aleatoriamente ao fixarmos uma *seed*. Os valores gerados são mostrados abaixo:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# summary(fit4)
+
+# Fixando uma seed
+set.seed(1923)
+
+# Gerando os dados
+x1 <- sample(0:1, 10, replace = TRUE)  # Variável binária (0 ou 1)
+x3 <- runif(10, min = 0, max = 1)    # Distribuição uniforme entre 0 e 100
+x6 <- rexp(10, rate = 0.2)  # Distribuição normal com média 3 e variância 10
+
+# Criando a matriz
+dados_predict <- tibble::as.tibble(cbind(x1, x3, x6))
+dados_predict
+```
+
+Os valores preditos pelo modelo ajustado são dados abaixo:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Para fazer predicao, fazemos
+predict(fit4, newdata = dados_predict) # valores preditos na amostra usada na estimacao
+```
