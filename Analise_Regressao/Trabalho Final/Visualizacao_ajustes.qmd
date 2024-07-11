@@ -1,0 +1,324 @@
+---
+title: "Visualização de Ajuste"
+author: "Leonardo Prior Migliorini"
+format: html
+editor: visual
+---
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+# Pacotes utilizados -----------------------------------------------------------
+
+library(hnp) # pacote para envelope simulado
+library(lmtest) # teste reset
+library(car) # para teste de multicolinearidade (fatores de inflacao de variancia)
+library(tseries) # teste de Jarque-Bera
+
+# Importando dados -------------------------------------------------------------
+
+# Carregue os dados aqui e faça as filtragens necessárias
+
+
+load("Models_Data.RData")
+dados_1 <- Models_Data
+dados <- Models_Data |> 
+  dplyr::mutate(
+    GHGC = log(GHGC)
+  ) |>
+  dplyr::select(
+    -c(1)
+  )
+
+dados <- dados[-c(11,12,32,123),]
+attach(dados)
+
+fit <- lm(GHGC ~ UNNC + UCAC ,data=dados) # ajustando o modelo
+summary(fit)
+step(fit)
+
+```
+
+## Ajuste de modelo
+
+Recomendação da função `step`:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+step(fit) # selecionando o melhor modelo baseado no AIC e stepwise
+```
+
+## Modelo para teste
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# fit <- lm(y ~ x1 + x2 + x3 + x6 + x7, data=dados) # ajustando o novo modelo
+# summary(fit)
+
+```
+
+## Análise de diagnóstico
+
+### Suposições do modelo
+
+Testanto \[S0\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+##### Testando as suposições do modelo
+
+## [S0] O modelo estah corretamente especificado
+## [S1] A media dos erros eh zero
+## [s2] Homoscedasticidade dos erros
+## [S3] Nao autocorrelacao
+## [S4] Ausencia de Multicolinearidade
+## [S5] Normalidade dos erros
+
+## Obs.: Para testes de hipoteses, se p-value < alpha (5%)
+## entao rejeita a hipotese nula (H0)
+
+## Testa [S0]
+## Teste RESET de especificacao
+## H0: O modelo estah corretamente especificado
+resettest(fit)
+
+```
+
+Testanto \[S1\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S1]
+## Teste t para a média dos errros
+## H0: média dos erros eh igual a zero
+t.test(resid(fit),mu=0,alternative="two.sided")
+```
+
+Testanto \[S2\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [s2]
+## Teste de Bressch-Pagan (Koenker) de Heteroscedasticidade
+## H0: erros sao homoscedasticos
+bptest(fit, studentize = TRUE)
+```
+
+Testanto \[S3\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S3]
+## Teste de Durbin-Watson de autocorrelacao
+## H0: : Nao hah autocorrelacao
+dwtest(fit)
+# acf(rstudent(fit))
+```
+
+Testanto \[S4\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S4]
+## Usa Fatores de Inflacao de Variancia para detectar multicolinearidade
+## Regra de bolso: vif > 10 indica multicolinearidade. vif=1 seria o ideal.
+vif(fit)
+```
+
+Testanto \[S5\]:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+## Testa [S5]
+## Teste Jarque-Bera de Normalidade
+## H0: Os erros possuem distribuicao normal
+jarque.bera.test(resid(fit))
+```
+
+```{r}
+#| include: false
+#| message: false
+#| warning: false
+
+# Cálculo das medidas de diagnóstico
+
+# com a seguinte funcao se obtem varias medidas de influencia
+im2 <- influence.measures(fit)
+n1 <- nrow(dados)
+
+# Alavancagem
+hatvalues(fit)
+h_bar <- fit$rank / n1
+limite_ala <- 2*h_bar
+which(hatvalues(fit) > limite_ala)
+
+# DFFIT
+dffits(fit)
+limite_dffits <- 2*sqrt(fit$rank / n1)
+which(abs(dffits(fit))>limite_dffits)
+
+# DFBETA
+dfbetas <- dfbetas(fit) # cada beta tem seu DF
+limite_dfbeta <- 2/sqrt(n1)
+
+# distancia de Cook
+cooks.distance(fit)
+limite_cook <- 4/(n1-fit$rank)
+which(abs(cooks.distance(fit))>limite_cook)
+
+# residuo
+residuo <- rstudent(fit) # residuo studentizado
+which(abs(residuo)>3)
+
+```
+
+Possíveis pontos influentes:
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+print("Alavancagem")
+which(hatvalues(fit) > limite_ala)
+
+print("DFFITS")
+which(abs(dffits(fit))>limite_dffits)
+
+print("DFBETAS")
+for(i in 1:ncol(dfbetas)){
+print(paste0("Beta", i))
+print(which(abs(dfbetas(fit))[,i]>limite_dfbeta))
+}
+
+print("Distância de Cook")
+which(abs(cooks.distance(fit))>limite_cook)
+
+print("Resíduo")
+which(abs(residuo)>3)
+```
+
+### Alavancagem
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot Alavancagem
+abline(plot(hatvalues(fit),ylab="Alavancagem"),
+       col="red", h=limite_ala,lty=2)
+
+```
+
+### DFFITS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot DFFITS
+abline(plot(dffits(fit),ylab="DFFITS"),
+       col="red", h=c(-limite_dffits,limite_dffits),lty=2)
+```
+
+### DFBETAS
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+par(mfrow = c(2, 2))
+
+abline(plot(dfbetas(fit)[,1],ylab="DFBETA 1"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfbetas(fit)[,2],ylab="DFBETA 2"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+abline(plot(dfbetas(fit)[,3],ylab="DFBETA 3"),
+       col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+# abline(plot(dfbetas(fit)[,4],ylab="DFBETA 4"),
+#        col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+# abline(plot(dfbetas(fit)[,5],ylab="DFBETA 5"),
+#        col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+# 
+# abline(plot(dfbetas(fit)[,6],ylab="DFBETA 6"),
+#        col=c("red","blue","red"), h=c(-limite_dfbeta,0,limite_dfbeta),lty=c(2,1,2))
+
+```
+
+### Distância de Cook
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Plot distância de Cook
+abline(plot(cooks.distance(fit),ylab="Distancia de Cook"),
+       col="red", h=limite_cook,lty=2)
+
+```
+
+### Resíduos
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+#Plots Resíduos
+plot(residuo,type='p',pch="+",main="Residuos",xlab="indices", ylim = c(-4,4)) # plota os residuos do modelo
+abline(h=c(-2,0,2),lty=3) # inclui linhas horizontais no grafico
+
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+
+hist(residuo) # histograma dos residuos
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# envelope simulado baseado nos residuos studentizados
+hnp(fit,resid.type="student",halfnormal = F) # envelope simulado
+```
