@@ -1,15 +1,13 @@
-load("Models_Data1.RData")
+load("Dados//Models_Data.RData")
+dados_1 <- Models_Data
 dados <- Models_Data |> 
   dplyr::mutate(
-    # CO2 = log(CO2)
-    CO2 = (CO2-mean(CO2))/sd(CO2)
-  ) |> 
+    GHGC = log(GHGC)
+  ) |>
   dplyr::select(
     -c(1)
   )
-attach(dados)
-summary(dados)
-hist(CO2)
+
 shapiro.test(CO2)
 
 cor_dados <- cor(dados) 
@@ -24,9 +22,3 @@ corrplot::corrplot(cor_dados,
                    cl.cex = 0.7, # Size of the color legend text
                    title = "Gráfico de correlação das variáveis", 
                    mar = c(0,0,1,0)) # Title margin
-
-
-
-fit <- lm(CO2 ~ UNNC + UCAC + GCCP + OR + DGCC + DOCC,data=dados) # ajustando o modelo
-summary(fit)
-step(fit)

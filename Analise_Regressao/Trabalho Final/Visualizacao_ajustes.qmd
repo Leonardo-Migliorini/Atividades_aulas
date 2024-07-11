@@ -22,7 +22,7 @@ library(tseries) # teste de Jarque-Bera
 # Carregue os dados aqui e faça as filtragens necessárias
 
 
-load("Models_Data.RData")
+load("Dados\\Models_Data.RData")
 dados_1 <- Models_Data
 dados <- Models_Data |> 
   dplyr::mutate(
@@ -32,7 +32,7 @@ dados <- Models_Data |>
     -c(1)
   )
 
-dados <- dados[-c(11,12,32,123),]
+dados <- dados[-c(8,11,12,32,123),]
 attach(dados)
 
 fit <- lm(GHGC ~ UNNC + UCAC ,data=dados) # ajustando o modelo
