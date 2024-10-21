@@ -18,10 +18,14 @@ y <- sqrt(- 2 * log(U_1)) * sin(2 * pi * U_2)
 
 # Gerando múltiplas ocorrências 
 
-gerador_box_muller <- function(seed, n){
+gerador_box_muller <- function(n, seed = NULL){
   
-  set.seed(seed)
+  # Verificando se o usuário deseja fixar uma seed de geração
+  if(is.null(seed) != TRUE){
+    set.seed(seed)
+  }
   
+  # Gerando os valores das variáveis com distribuição uniforme
   U_1 <- runif(n)
   U_2 <- runif(n)
   
