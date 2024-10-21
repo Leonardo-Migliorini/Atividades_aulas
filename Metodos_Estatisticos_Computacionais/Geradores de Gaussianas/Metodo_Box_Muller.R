@@ -20,6 +20,8 @@ y <- sqrt(- 2 * log(U_1)) * sin(2 * pi * U_2)
 
 gerador_box_muller <- function(seed, n){
   
+  set.seed(seed)
+  
   U_1 <- runif(n)
   U_2 <- runif(n)
   
