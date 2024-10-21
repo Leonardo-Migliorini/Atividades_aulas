@@ -92,15 +92,21 @@ gerador_polar <- function(n){
     Z_1 <- sqrt(- 2 * log(w_1) / w_1) * x_1
     Z_2 <- sqrt(- 2 * log(w_2) / w_2) * y_2
   
+    
   # Juntando os valores em um único vetor
+  if(n == 1){ # Forçando o retorno de apenas um valor quando n = 1
+    Z <- c(Z_1)
+  }
+  else{
     Z <- c(Z_1, Z_2)
+  }
     
   return(Z)
 }
 
 # Testando a função
 
-values <- gerador_polar(1000)
+values <- gerador_polar(1)
 
 # Null hypothesis: The sample was generated from a normal distribution
 hist(values)

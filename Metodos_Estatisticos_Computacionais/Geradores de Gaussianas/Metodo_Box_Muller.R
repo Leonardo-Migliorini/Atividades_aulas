@@ -22,21 +22,27 @@ gerador_box_muller <- function(seed, n){
   
   U_1 <- runif(n)
   U_2 <- runif(n)
- 
+  
   # Dividindo o tamanho amostra igualmente para cada transformação
   if(n %% 2 == 0){
     # Aplicando a transformação para gerar os valores da Normal Padrão:
     x_1 <- sqrt(- 2 * log(U_1[1:(n/2)])) * cos(2 * pi * U_2[1:(n/2)])
-    x_2 <- sqrt(- 2 * log(U_1)[1:(n/2+1)]) * sin(2 * pi * U_2[1:(n/2+1)])
+    x_2 <- sqrt(- 2 * log(U_1)[(n/2+1):n]) * sin(2 * pi * U_2[(n/2+1):n])
   }
   else{
     # Aplicando a transformação para gerar os valores da Normal Padrão:
     x_1 <- sqrt(- 2 * log(U_1[1:(n %/% 2)])) * cos(2 * pi * U_2[1:(n %/% 2)])
-    x_2 <- sqrt(- 2 * log(U_1)[1:(n %/% 2)]) * sin(2 * pi * U_2[1:(n %/% 2)])
+    x_2 <- sqrt(- 2 * log(U_1)[(n %/% 2 + 1):n]) * sin(2 * pi * U_2[(n %/% 2 + 1):n])
   }
-    
+  
+  # Juntando os valores em um único vetor
+  if(n == 1){   # Forçando o retorno de apenas um valor quando n = 1
+    x <- c(x_1)
+  }
+  else{
     x <- c(x_1, x_2)
-    
+  }
+  
   return(x)
 }
 
