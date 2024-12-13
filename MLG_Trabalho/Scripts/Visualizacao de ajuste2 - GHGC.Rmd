@@ -1,0 +1,229 @@
+---
+title: "Visualização Ajustes"
+author: "Leonardo P. Migliorini"
+date: 
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+```
+
+
+```{r, include = FALSE}
+# Carregando pacotes
+library(hnp) # fazer envelopes simulados
+library(MASS) # para poder utilizar o Modelo Binomial Negativa
+library(modEvA) # Calcular R2 de Nagelkerke
+library(ggplot2)
+
+# Inclusão de nova covariável
+load("C:/Users/leona/Dropbox/Faculdade/6° Semestre/Modelos Lineares Generalizados/Trabalho Final/Ajustes/Models_Data_new.RData") # CO2
+
+dados_temp <- dados_new |> 
+  dplyr::select(
+    -c(1)
+  )
+summary(dados_temp)
+
+# Arrumando as variáveis Dummies
+continent <- fastDummies::dummy_cols(as.character(dados_temp[,1]))[,-1]
+
+colnames(continent)<-c("Africa","America","Asia","Europe","Ocenia")
+
+# Caso precise remover medidas influentes
+
+dados <- cbind(dados_temp,continent)
+# summary(dados)
+
+dados <- dados[-c(20,79,11,66,28,8,27,73,53,68,43,82),]
+```
+
+## Ajuste de Modelo
+
+```{r}
+# CO2
+# Modelo Nulo
+null_fit <- glm(GHGC ~ 1 , family = Gamma(link = "log"), data=dados) # ajustando o modelo
+
+# fit_all <- glm(GHGC ~ UNNC + UCAC + GCCP + OR + DGCC + DOCC + Africa + Europe + America + Asia, family = Gamma(link = "log"), data=dados) # ajustando o modelo
+# summary(fit_all)
+# step(fit_all)
+
+fit <- glm(GHGC ~ UNNC + UCAC + DOCC , family = Gamma(link = "log"), data=dados) # ajustando o modelo
+summary(fit)
+
+```
+
+### Teste tipo Reset
+
+```{r}
+# Teste tipo reset
+eta.hat2 <- fitted(fit)^2
+
+reset_test <- glm(GHGC ~ UNNC + UCAC + DOCC + eta.hat2, family = Gamma(link = "log"), data=dados) # ajustando o modelo
+summary(reset_test)
+
+```
+
+Se o eta.hat2 for significativo, então o modelo não está corretamente especificado.
+
+## Análise de Desvio
+
+### Função Desvio
+
+```{r}
+D = round(deviance(fit), 2) # desvio
+n = nrow(dados) # tamanho amostral
+gl = n - fit$rank # graus de liberdade
+quantil <- round(qchisq(0.95, gl),2)
+```
+
+Temos que o valor da função desvio para o modelo ajustado é $S_{k} =$ `r D`. Temos que $\chi^{2}_{(0.95,n-k)}=$ `r quantil`.
+
+### ANODEV
+
+```{r}
+# Caso queira comparar dois modelos ou mais.
+anova(null_fit, fit, test="Chisq")
+```
+
+### R2 de Nagelkerke
+
+```{r, include = FALSE}
+r2 <- round(modEvA::RsqGLM(fit)$Nagelkerke, 4)
+```
+
+Temos que o $R^{^2}$ de Nagelkerke é igual a `r r2`, ou seja `r r2*100`\% da variabilidade da variável resposta está sendo explicada em razão das covariáveis consideradas no modelo.
+
+## Análise de Diagnóstico
+
+### Observado vs índice
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# observado versus ajustados
+ggplot(data = dados, aes(x = GHGC, y = fitted(fit))) +
+  geom_point(color = "black") +  # Add points to the plot
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "blue") +  # Add identity line
+  labs(
+    title = "Fitted vs. Obs",
+    x = "Obs",
+    y = "Fitted"
+  ) +
+  theme_minimal()
+```
+
+### Resíduo vs Índices
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+
+# residuos x indice
+td = resid(fit,type="deviance") # residuos componente do desvio (melhor)
+plot_data_resxind <- data.frame(Indice = seq(n), Residuos = td)
+
+ggplot(plot_data_resxind, aes(x = Indice, y = Residuos)) +
+  geom_point(shape = "+", size = 3) +
+  geom_hline(yintercept = c(0,0), linetype = "solid", color = "black") +
+  geom_hline(yintercept = c(-3, 3), linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = c(-2, 2), linetype = "dotted", color = "blue") +
+  ylim(c(-4,4)) +
+  labs(x = "indice", y = "Residuos") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(panel.grid.major = ggplot2::element_blank(),
+                 panel.grid.minor = ggplot2::element_blank())
+```
+
+### Histograma dos resíduos
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# Histograma dos Resíduos
+hist(td)
+```
+
+### Teste de Normalidade
+
+```{r}
+# Teste de Normalidade dos Resíduos
+# shapiro.test(td)
+```
+
+Lembrando que $p-value > 0.05$ indica normalidade dos resíduos
+
+### Envelope Simulado
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 5}
+# hnp(fit,half=F,resid.type="deviance")
+# set.seed(15)
+set.seed(82367)
+hnp(fit,half=F, sim = 500, conf = 0.95,resid.type="deviance", paint.out = TRUE)
+```
+
+## Mediadas de Influência
+
+### Alavancagem
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# Alavancagem
+plot(hatvalues(fit),ylab="Alavancagem")
+which(hatvalues(fit) > 0.175)
+```
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# alavancagem vs valores ajustados
+plot(fitted(fit),hatvalues(fit),ylab="Alavancagem")
+```
+
+### Distância de Cook
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# distancia de Cook
+plot(cooks.distance(fit),ylab="Distancia de Cook")
+which(cooks.distance(fit) > 0.06)
+```
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# cook vs valores ajustados
+plot(fitted(fit),cooks.distance(fit),ylab="Distancia de Cook")
+```
+
+### Dffits
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+# DFfit2
+# dffits(fit)
+plot(dffits(fit),ylab="DFfitS")
+which(dffits(fit) < -0.7)
+
+```
+
+### Covariance Ratio
+
+```{r, fig.align = 'center', fig.width = 6, fig.height = 4}
+
+plot(covratio(fit),ylab="CovRatio")
+```
+
+### Possíveis pontos influentes
+
+```{r}
+options(max.print = 10000)
+measures <- influence.measures(fit)
+
+# Extract only rows with influential points
+influential_points <- which(apply(measures$is.inf, 1, any))
+
+# Print the rows with influential points
+influential_measures <- measures$infmat[influential_points, ]
+print(influential_measures)
+```
+
+### Melhorias a fazer
+
+1. Melhorar gráficos das medidas de Influência
+
+1. Ler sobre Covariance Ratio
