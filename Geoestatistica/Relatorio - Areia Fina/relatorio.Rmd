@@ -10,3 +10,22 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
+# Itens requisitados:
+
+- Gráfico com as coordenadas do pontos, dados vs coords X, dados vs coors de Y.         
+- Gráfico da correção de tendência se necessário      
+- Gráfico do Semivariograma estimado (estimador clássico ou robusto) e envelope simulado para correlação espacial        
+- Semivariograma das 4 direções principais        
+- Gráfico dos 5 semivariogramas e ajuste esférico (0, 45, 90, 135 e omnidirecional) para avaliar anisotropia       
+- Os valores de Fa e FC       
+- O ângulo de anisotropia       
+- Gráfico com as coordenadas originas e corrigidas        
+- Gráfico com os semivariogramas direcionais originais e os semivariogramas direcionais após correção da anisotropia       
+- Semivariograma com ajuste de modelo esférico final após correção da anisotropia     
+- Valor dos parâmetros do modelo final        
+- Tabela com o ajuste das 15 combinações de modelos e métodos de estimação (c0 c1 c a, EM ER DMem Ser EA beta0 beta1)
+- Identificação do melhor modelo/método de estimação e apresentação do valores de parâmetros e índices DE e IDE com suas classificações
+
+
+
+
