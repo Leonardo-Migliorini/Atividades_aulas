@@ -14,6 +14,7 @@ plot(geodados, lowes = TRUE)
 plot(geodados, trend = "1st", lowes = TRUE)
 plot(geodados, trend = "2nd", lowes = TRUE)
 
+
 # boxplot
 boxplot(geodados$data, xlab = "Dados")
 
@@ -55,6 +56,7 @@ plot(vario4, xlab = "Distância (h)", ylab = "Semivariância", sub = "hmax 80% -
 
 # Envelopes para verificar a existência de dependência espacial
 
+par(mfrow = c(1, 1))
 vario.env <- variog.mc.env(geodados, obj.var = vario2)
 plot(vario2, envelope = vario.env)
 
@@ -66,23 +68,18 @@ plot(var4)
 
 vario <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = "omnidirectional") # geral
 sph <- variofit(vario, cov.model = "sph", weights = "npairs")
-sph
 
 vario1 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = 0) # direção 0º
 sph1 <- variofit(vario1, cov.model = "sph", weights = "npairs")
-sph1
 
 vario2 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = pi / 4) # direção 45º
 sph2 <- variofit(vario2, cov.model = "sph", weights = "npairs")
-sph2
 
 vario3 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = pi / 2) # direção 90º
 sph3 <- variofit(vario3, cov.model = "sph", weights = "npairs")
-sph3
 
 vario4 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = 3 * pi / 4) # direção 135º
 sph4 <- variofit(vario4, cov.model = "sph", weights = "npairs")
-sph4
 
 par(mfrow = c(1, 1))
 plot(vario, xlab = "Distância (h)", ylab = "Semivariância")
@@ -186,7 +183,6 @@ summary(geodadosc)
 # Semivariogramas nas 4 direções principais após correção da anisotropia:
 hmaxc <- summary(geodadosc)[[3]][[2]] * 0.8
 var4c <- variog4(geodadosc, trend = "1st", estimator = "classical", max.dist = hmaxc)
-plot(var4c)
 
 # 4 direções com coordenadas originais e 4 direções com coordenadas corrigidas:
 par(mfrow = c(1, 2))
@@ -194,99 +190,51 @@ plot(var4)
 plot(var4c)
 
 # Ajuste final (após correção da anisotropia - Semivariograma omnidirecional):
+par(mfrow = c(1, 1))
 varioc <- variog(geodadosc, trend = "1st", estimator = "classical", max.dist = hmaxc, direction = "omnidirectional")
 sphc <- variofit(varioc, cov.model = "sph", weights = "npairs")
-sphc
-plot(varioc, xlab = "Distância (h)", ylab = "Semivariância", sub = "final")
+plot(varioc, xlab = "Distancia (h)", ylab = "Semivariancia", sub = "final")
 lines(sphc, lwd = 1, lty = 1, col = "red")
+
+# Ajuste 15 Modelos ------------------------------------------------------------
 
 # Ajuste de modelos por Mínimos Quadrados Ordinários:
 sph.ols <- variofit(varioc, cov.model = "sph", weights = "equal")
-sph.ols
 
 exp.ols <- variofit(varioc, cov.model = "exp", weights = "equal")
-exp.ols
 
 gaus.ols <- variofit(varioc, cov.model = "gaus", weights = "equal")
-gaus.ols
 
 # Ajuste de modelos por Mínimos Quadrados Ponderados (Nº de pares por lag):
 sph.wls1 <- variofit(varioc, cov.model = "sph", weights = "npairs")
-sph.wls1
 
 exp.wls1 <- variofit(varioc, cov.model = "exp", weights = "npairs")
-exp.wls1
 
 gaus.wls1 <- variofit(varioc, cov.model = "gaus", weights = "npairs")
-gaus.wls1
 
 # Ajuste de modelos por Mínimos Quadrados Ponderados (proposta de Cressie):
 sph.wls2 <- variofit(varioc, cov.model = "sph", weights = "cressie")
-sph.wls2
 
 exp.wls2 <- variofit(varioc, cov.model = "exp", weights = "cressie")
-exp.wls2
 
 gaus.wls2 <- variofit(varioc, cov.model = "gaus", weights = "cressie")
-gaus.wls2
 
 # Ajuste de modelos por Máxima Verossimilhança:
 sph.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "sph", lik.method = "ML")
-sph.ml
 
 exp.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "exp", lik.method = "ML")
-exp.ml
 
 gaus.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "gaus", lik.method = "ML")
-gaus.ml
 
 # Ajuste de modelos por Máxima Verossimilhança Restrita:
 sph.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "sph", lik.method = "REML")
-sph.reml
 
 exp.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "exp", lik.method = "REML")
-exp.reml
 
 gaus.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "gaus", lik.method = "REML")
-gaus.reml
-
-# Tentativa de visualizar os ajustes dos modelos:
-plot(varioc, xlab = "Distância (h)", ylab = "Semivariância")
-lines(sph.ols, lwd = 1, lty = 1, col = "red")
-lines(exp.ols, lwd = 1, lty = 2, col = "red")
-lines(gaus.ols, lwd = 1, lty = 3, col = "red")
-lines(sph.wls1, lwd = 1, lty = 1, col = "blue")
-lines(exp.wls1, lwd = 1, lty = 2, col = "blue")
-lines(gaus.wls1, lwd = 1, lty = 3, col = "blue")
-lines(sph.wls2, lwd = 1, lty = 1, col = "green")
-lines(exp.wls2, lwd = 1, lty = 2, col = "green")
-lines(gaus.wls2, lwd = 1, lty = 3, col = "green")
-lines(sph.ml, lwd = 1, lty = 1, col = "black")
-lines(exp.ml, lwd = 1, lty = 2, col = "black")
-lines(gaus.ml, lwd = 1, lty = 3, col = "black")
-lines(sph.reml, lwd = 1, lty = 1, col = "gray")
-lines(exp.reml, lwd = 1, lty = 2, col = "gray")
-lines(gaus.reml, lwd = 1, lty = 3, col = "gray")
 
 # Avaliação dos ajustes dos modelos por meio de um grupo de critérios:
-# sph.ols
-sph.ols[[5]] # Minimised sum of squares
-# exp.ols
-exp.ols[[5]] # Minimised sum of squares
-# gaus.ols
-gaus.ols[[5]] # Minimised sum of squares
-# sph.wls1
-sph.wls1[[5]] # Minimised sum of squares
-# exp.wls1
-exp.wls1[[5]] # Minimised sum of squares
-# gaus.wls1
-gaus.wls1[[5]] # Minimised sum of squares
-# sph.wls2
-sph.wls2[[5]] # Minimised sum of squares
-# exp.wls2
-exp.wls2[[5]] # Minimised sum of squares
-# gaus.wls2
-gaus.wls2[[5]] # Minimised sum of squares
+
 # sph.ml
 (-2) * (sph.ml$loglik) + 2 * 6 # AIC    (6 parâmetros devido ao trend="1st": beta0, beta1, beta2, EP, CT, AL)
 (-2) * (sph.ml$loglik) + 6 * (log(summary(geodados)[[1]])) # BIC

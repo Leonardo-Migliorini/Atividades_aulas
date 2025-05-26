@@ -1,31 +1,197 @@
 ---
-title: "Relatório AMF"
+title: "Análise Areia Muito Fina"
 author: "Leonardo P. Migliorini"
-date: "2025-04-30"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE)
 ```
+
+```{r, include = FALSE}
+# Loading packages -------------------------------------------------------------
+library(geoR)
+
+# Loading data -----------------------------------------------------------------
+
+(geodados <- read.geodata("AMF.txt", h = T))
+```
+
+```{r}
+plot(geodados, lowes = TRUE)
+```
+
+```{r}
+plot(geodados, trend = "1st", lowes = TRUE)
+```
+
+```{r}
+# Estimando o semivariograma (Semivariograma amostral)
+hmax1 <- summary(geodados)[[3]][[2]] * 0.9
+
+hmax2 <- summary(geodados)[[3]][[2]] * 0.8
+
+vario1 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax1)
+vario2 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2)
+
+vario3 <- variog(geodados, trend = "1st", estimator = "modulus", max.dist = hmax1)
+vario4 <- variog(geodados, trend = "1st", estimator = "modulus", max.dist = hmax2)
+
+par(mfrow = c(2, 2))
+plot(vario1, xlab = "Distância (h)", ylab = "Semivariância", sub = "hmax 90% - clássico")
+plot(vario2, xlab = "Distância (h)", ylab = "Semivariância", sub = "hmax 80% - clássico")
+plot(vario3, xlab = "Distância (h)", ylab = "Semivariância", sub = "hmax 90% - robusto")
+plot(vario4, xlab = "Distância (h)", ylab = "Semivariância", sub = "hmax 80% - robusto")
+```
+
+```{r}
+par(mfrow = c(1, 1))
+vario.env <- variog.mc.env(geodados, obj.var = vario2)
+plot(vario2, envelope = vario.env)
+```
+
+```{r}
+# Avaliação da anisotropia:
+var4 <- variog4(geodados, trend = "1st", max.dist = hmax2) # Gera semivariogramas em 4 direções principais
+plot(var4)
+```
+
+```{r, include = FALSE}
+# Ajuste de modelo esférico em cada direção:
+
+vario <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = "omnidirectional") # geral
+sph <- variofit(vario, cov.model = "sph", weights = "npairs")
+
+vario1 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = 0) # direção 0º
+sph1 <- variofit(vario1, cov.model = "sph", weights = "npairs")
+
+vario2 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = pi / 4) # direção 45º
+sph2 <- variofit(vario2, cov.model = "sph", weights = "npairs")
+
+vario3 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = pi / 2) # direção 90º
+sph3 <- variofit(vario3, cov.model = "sph", weights = "npairs")
+
+vario4 <- variog(geodados, trend = "1st", estimator = "classical", max.dist = hmax2, direction = 3 * pi / 4) # direção 135º
+sph4 <- variofit(vario4, cov.model = "sph", weights = "npairs")
+```
+
+
+```{r}
+par(mfrow = c(1, 1))
+plot(vario, xlab = "Distância (h)", ylab = "Semivariância")
+lines(sph, lwd = 1, lty = 1, col = "gray")   # omnidirecional
+lines(sph1, lwd = 1, lty = 1, col = "black") # 0°
+lines(sph2, lwd = 1, lty = 1, col = "red")   # 45°
+lines(sph3, lwd = 1, lty = 1, col = "green") # 90°
+lines(sph4, lwd = 1, lty = 1, col = "blue")  # 135°
+
+legend("bottomright", 
+       legend = c("Omnidirecional", "0º", "45º", "90º", "135º"),
+       col = c("gray", "black", "red", "green", "blue"),
+       lwd = 1, lty = 1, cex = 0.8, bty = "n")
+
+```
+
+```{r, include = FALSE}
+# Avaliação dos parâmetros estimados (Alcance prático - Anisotropia geométrica):
+# 0º
+sph1[[8]]
+# 45º
+sph2[[8]]
+# 90º
+sph3[[8]]
+# 135º
+sph4[[8]]
+# omnidirecional
+sph[[8]]
+
+# Identificação do maior alcance (a_max) e do menor alcance (a_min):
+(a_max <- max(sph1[[8]], sph2[[8]], sph3[[8]], sph4[[8]]))
+(a_min <- min(sph1[[8]], sph2[[8]], sph3[[8]], sph4[[8]]))
+
+# Razão de anisotropia geometrica:
+
+Fa <- a_max / a_min
+
+# Avaliação dos parâmetros estimados (Patamar - Anisotropia zonal):
+# 0º
+sph1[[1]] + sph1[[2]][[1]]
+# 45º
+sph2[[1]] + sph2[[2]][[1]]
+# 90º
+sph3[[1]] + sph3[[2]][[1]]
+# 135º
+sph4[[1]] + sph4[[2]][[1]]
+# omnidirecional
+sph[[1]] + sph[[2]][[1]]
+
+# Identificação do maior patamar (C_max) e do menor patamar (C_min):
+(C_max <- max(
+  sph1[[1]] + sph1[[2]][[1]], sph2[[1]] + sph2[[2]][[1]],
+  sph3[[1]] + sph3[[2]][[1]], sph4[[1]] + sph4[[2]][[1]]
+))
+(C_min <- min(
+  sph1[[1]] + sph1[[2]][[1]], sph2[[1]] + sph2[[2]][[1]],
+  sph3[[1]] + sph3[[2]][[1]], sph4[[1]] + sph4[[2]][[1]]
+))
+
+# Razão de anisotropia zonal:
+FC <- C_max / C_min
+
+```
+
+Dizer qual o ângulo de anisotropia 
+
+
+```{r}
+# Correção da anisotropia geométrica:
+# Transformação das coordenadas de acrodo com os parâmetros de anisotropia:
+
+coordsA <- coords.aniso(geodados$coords, aniso.pars = c(pi / 2, Fa))
+# plot com as coordenadas originais (anisotropia) e o plot das
+# 	coordenadas corrigidas (isotropia):
+par(mfrow = c(1, 2))
+plot(geodados$coords)
+plot(coordsA)
+
+```
+
+```{r, include = FALSE}
+# Novo geodados:
+dados <- cbind(coordsA, geodados$data)
+geodadosc <- as.geodata(dados)
+```
+
+```{r}
+# Semivariogramas nas 4 direções principais após correção da anisotropia:
+hmaxc <- summary(geodadosc)[[3]][[2]] * 0.8
+var4c <- variog4(geodadosc, trend = "1st", estimator = "classical", max.dist = hmaxc)
+
+# 4 direções com coordenadas originais e 4 direções com coordenadas corrigidas:
+par(mfrow = c(1, 2))
+plot(var4)
+plot(var4c)
+```
+
+```{r, include = FALSE}
+# Ajuste final (após correção da anisotropia - Semivariograma omnidirecional):
+
+varioc <- variog(geodadosc, trend = "1st", estimator = "classical", max.dist = hmaxc, direction = "omnidirectional")
+sphc <- variofit(varioc, cov.model = "sph", weights = "npairs")
+
+```
+
+```{r}
+par(mfrow = c(1, 1))
+plot(varioc, xlab = "Distancia (h)", ylab = "Semivariancia", sub = "final")
+lines(sphc, lwd = 1, lty = 1, col = "red")
+```
+
+Comentar valores dos parâmetros do modelo final c0 c1 c a
+
 
 
 # Itens requisitados:
 
-- Gráfico com as coordenadas do pontos, dados vs coords X, dados vs coors de Y.         
-- Gráfico da correção de tendência se necessário      
-- Gráfico do Semivariograma estimado (estimador clássico ou robusto) e envelope simulado para correlação espacial        
-- Semivariograma das 4 direções principais        
-- Gráfico dos 5 semivariogramas e ajuste esférico (0, 45, 90, 135 e omnidirecional) para avaliar anisotropia       
-- Os valores de Fa e FC       
-- O ângulo de anisotropia       
-- Gráfico com as coordenadas originas e corrigidas        
-- Gráfico com os semivariogramas direcionais originais e os semivariogramas direcionais após correção da anisotropia       
-- Semivariograma com ajuste de modelo esférico final após correção da anisotropia     
-- Valor dos parâmetros do modelo final        
 - Tabela com o ajuste das 15 combinações de modelos e métodos de estimação (c0 c1 c a, EM ER DMem Ser EA beta0 beta1)
 - Identificação do melhor modelo/método de estimação e apresentação do valores de parâmetros e índices DE e IDE com suas classificações
-
-
-
-
