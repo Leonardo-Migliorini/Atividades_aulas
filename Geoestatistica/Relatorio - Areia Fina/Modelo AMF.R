@@ -224,14 +224,14 @@ sph.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0,
 
 exp.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "exp", lik.method = "ML")
 
-gaus.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "gaus", lik.method = "ML")
+gaus.ml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(1, 50), nugget = 0, cov.model = "gaus", lik.method = "ML")
 
 # Ajuste de modelos por Máxima Verossimilhança Restrita:
 sph.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "sph", lik.method = "REML")
 
 exp.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "exp", lik.method = "REML")
 
-gaus.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(2, 130), nugget = 0, cov.model = "gaus", lik.method = "REML")
+gaus.reml <- likfit(geodadosc, trend = "1st", ini.cov.pars = c(1, 50), nugget = 0.01, cov.model = "gaus", lik.method = "REML")
 
 # Avaliação dos ajustes dos modelos por meio de um grupo de critérios:
 
@@ -449,7 +449,7 @@ if (DE < 25) {
 C0 <- # efeito pepita
   C1 <- # contribuição
   a <- # alcance prático
-  MD <- # máxima distância
+  MD <- 901.3878# máxima distância
   I <- if (C1 == 0) {
     I <- 0
   } else {
@@ -493,3 +493,4 @@ if (IDE_gaus < 9) {
 } else {
   cat("Forte dependência espacial")
 }
+

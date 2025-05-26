@@ -189,9 +189,78 @@ lines(sphc, lwd = 1, lty = 1, col = "red")
 
 Comentar valores dos parâmetros do modelo final c0 c1 c a
 
+Inserir tabela depois
 
+```{r}
+# Índice DE proposto por Biondi et al. (1994):
+# Estimativas dos parâmetros do semivariograma:
+C0 <- # efeito pepita
+  C1 <- # contribuição
+  #
+  I <- if (C1 == 0) {
+    I <- 0
+  } else {
+    I <- C1 / (C0 + C1)
+  }
 
-# Itens requisitados:
-
-- Tabela com o ajuste das 15 combinações de modelos e métodos de estimação (c0 c1 c a, EM ER DMem Ser EA beta0 beta1)
-- Identificação do melhor modelo/método de estimação e apresentação do valores de parâmetros e índices DE e IDE com suas classificações
+# DE
+DE <- I * 100
+DE
+# Classificação do DE (adaptada de Cambardella et al. (1994))
+if (DE < 25) {
+  cat("Fraca dependência espacial")
+} else if (DE >= 25 && DE < 75) {
+  cat("Moderada dependência espacial")
+} else {
+  cat("Forte dependência espacial")
+}
+# Índice IDE proposto por Seidel e Oliveira (2014, 2016):
+# Estimativas dos parâmetros do semivariograma:
+C0 <- # efeito pepita
+  C1 <- # contribuição
+  a <- # alcance prático
+  MD <- 901.3878# máxima distância
+  I <- if (C1 == 0) {
+    I <- 0
+  } else {
+    I <- C1 / (C0 + C1)
+  }
+II <- if (a >= (0.5 * MD)) {
+  II <- 1
+} else {
+  II <- a / (0.5 * MD)
+}
+# IDE no modelo Esférico
+IDE_esf <- 0.375 * I * II * 100
+IDE_esf
+# Classificação do IDE_esf
+if (IDE_esf < 7) {
+  cat("Fraca dependência espacial")
+} else if (IDE_esf >= 7 && IDE_esf < 15) {
+  cat("Moderada dependência espacial")
+} else {
+  cat("Forte dependência espacial")
+}
+# IDE no modelo Exponencial
+IDE_exp <- 0.317 * I * II * 100
+IDE_exp
+# Classificação do IDE_exp
+if (IDE_exp < 6) {
+  cat("Fraca dependência espacial")
+} else if (IDE_exp >= 6 && IDE_exp < 13) {
+  cat("Moderada dependência espacial")
+} else {
+  cat("Forte dependência espacial")
+}
+# IDE no modelo Gaussiano
+IDE_gaus <- 0.504 * I * II * 100
+IDE_gaus
+# Classificação do IDE_gaus
+if (IDE_gaus < 9) {
+  cat("Fraca dependência espacial")
+} else if (IDE_gaus >= 9 && IDE_gaus < 20) {
+  cat("Moderada dependência espacial")
+} else {
+  cat("Forte dependência espacial")
+}
+```
