@@ -6,16 +6,20 @@ output: pdf_document
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4.5)
 ```
 
 ```{r, include = FALSE}
 # Loading packages -------------------------------------------------------------
 library(geoR)
+library(knitr)
 
 # Loading data -----------------------------------------------------------------
 
 (geodados <- read.geodata("AMF.txt", h = T))
 ```
+
+Abaixo, temos os gráficos da malha de pontos amostrados, os valores da variável AMF versus as coordenadas do sistema de referência (X e Y), e o histograma mostrando a dispersão da variável AMF. 
 
 ```{r}
 plot(geodados, lowes = TRUE)
@@ -24,6 +28,8 @@ plot(geodados, lowes = TRUE)
 ```{r}
 plot(geodados, trend = "1st", lowes = TRUE)
 ```
+
+
 
 ```{r}
 # Estimando o semivariograma (Semivariograma amostral)
@@ -192,10 +198,60 @@ Comentar valores dos parâmetros do modelo final c0 c1 c a
 Inserir tabela depois
 
 ```{r}
+dados_esferico <- data.frame(
+  Estimativas = c("EP", "CT", "AL", "MinimaSQ", "", "", "EM", "ER", "Dpem", "Ser", "EA", "B0", "B1"),
+  OLS   = c(0, 2.3, 114.06, 1.4345, "", "", 0.00996, 0.00543, 0.79186, 0.82375, 76.3996, 0.25416, 0.95428),
+  MLS   = c(0, 2.3, 114.06, 613.7262, "", "", 0.11681, 0.0076, 0.79805, 0.90343, 77.70022, 0.59124, 0.89145),
+  Cre   = c(0.77, 1.53, 171.09, 137.8317, "", "", 0.00923, 0.00484, 0.7927, 0.81352, 76.65897, 0.15567, 0.97258),
+  MV    = c(0.1586, 1.9635, 124.071, "AIC/BIC", 363.8898, 380.7139, 0.01176, 0.00668, 0.78143, 0.83575, 74.49706, 0.27335, 0.951),
+  REML  = c(0.1333, 2.1361, 125.3123, "AIC/BIC", 350.9683, 367.7924, 0.01166, 0.00662, 0.78396, 0.83667, 74.98033, 0.33515, 0.93941)
+)
+
+kable(dados_esferico, caption = "Estimativas para o modelo esférico")
+```
+
+```{r}
+exponencial <- data.frame(
+  Estatistica = c("EP", "CT", "AL", "MinimaSQ", "", "", 
+                  "EM", "ER", "Dpem", "Ser", "EA", "B0", "B1"),
+  OLS   = c(0, 2.3, 57.03, 1.6933, "", "", 0.01105, 0.00555, 0.79975, 0.80121, 78.031, 0.23329, 0.95584),
+  MLS   = c(0, 2.3, 57.03, 770.9322, "", "", 0.11879, 0.00571, 0.80037, 0.7878, 78.15279, 0.15723, 0.97278),
+  Cre   = c(0, 2.3, 57.03, 177.8137, "", "", 0.01098, 0.00539, 0.79873, 0.79165, 77.83325, 0.18325, 0.96774),
+  MV    = c(0.1233, 3.4929, 129.999, "AIC/BIC", 367.7111, 384.5352, 0.00531, 0.00326, 0.79129, 0.84323, 76.38815, 0.28946, 0.94684),
+  REML  = c(0.897, 3.7937, 130.000, "AIC/BIC", 350.4786, 367.3027, 0.00525, 0.00327, 0.79269, 0.84325, 76.66044, 0.35993, 0.93337)
+)
+
+kable(exponencial, caption = "Estatísticas para o modelo exponencial")
+
+```
+
+```{r}
+gaussiano <- data.frame(
+  Estatistica = c("EP", "CT", "AL", "MinimaSQ", "", "", 
+                  "EM", "ER", "Dpem", "Ser", "EA", "B0", "B1"),
+  OLS   = c(0, 2.3, 57.03, 1.4134, "", "", 0.01022, 0.00575, 0.76753, 0.8176, 71.8698, 0.25416, 0.95428),
+  MLS   = c(0, 2.3, 57.03, 612.485, "", "", 0.11725, 0.00832, 0.77939, 0.91177, 74.10791, 0.59124, 0.89145),
+  Cre   = c(0.77, 1.53, 57.03, 130.143, "", "", 0.00952, 0.00522, 0.76834, 0.81071, 72.0221, 0.15567, 0.97248),
+  MV    = c(0.5833, 2.2347, 75.9108, "AIC/BIC", 359.3342, 376.1583, 0.00827, 0.00482, 0.76933, 0.83592, 72.2076, 0.27335, 0.951),
+REML  = c(0.4864, 2.7574, 80.0117, "AIC/BIC", 344.5574, 361.3815, 0.00757, 0.00442, 0.77153, 0.83832, 72.62136, 0.33515, 0.93941)
+)
+
+kable(gaussiano, caption = "Estatísticas para o modelo gaussiano")
+
+```
+
+```{r, include = FALSE}
+
+gaus.wls2 <- variofit(varioc, cov.model = "gaus", weights = "cressie")
+```
+
+
+
+```{r, include = FALSE}
 # Índice DE proposto por Biondi et al. (1994):
 # Estimativas dos parâmetros do semivariograma:
-C0 <- # efeito pepita
-  C1 <- # contribuição
+C0 <- 0.5374 # efeito pepita
+  C1 <- 1.8074 # contribuição
   #
   I <- if (C1 == 0) {
     I <- 0
@@ -205,7 +261,7 @@ C0 <- # efeito pepita
 
 # DE
 DE <- I * 100
-DE
+
 # Classificação do DE (adaptada de Cambardella et al. (1994))
 if (DE < 25) {
   cat("Fraca dependência espacial")
@@ -216,9 +272,9 @@ if (DE < 25) {
 }
 # Índice IDE proposto por Seidel e Oliveira (2014, 2016):
 # Estimativas dos parâmetros do semivariograma:
-C0 <- # efeito pepita
-  C1 <- # contribuição
-  a <- # alcance prático
+C0 <- 0.5374 # efeito pepita
+  C1 <- 1.8074 # contribuição
+  a <- 69.1901# alcance prático
   MD <- 901.3878# máxima distância
   I <- if (C1 == 0) {
     I <- 0
@@ -230,31 +286,8 @@ II <- if (a >= (0.5 * MD)) {
 } else {
   II <- a / (0.5 * MD)
 }
-# IDE no modelo Esférico
-IDE_esf <- 0.375 * I * II * 100
-IDE_esf
-# Classificação do IDE_esf
-if (IDE_esf < 7) {
-  cat("Fraca dependência espacial")
-} else if (IDE_esf >= 7 && IDE_esf < 15) {
-  cat("Moderada dependência espacial")
-} else {
-  cat("Forte dependência espacial")
-}
-# IDE no modelo Exponencial
-IDE_exp <- 0.317 * I * II * 100
-IDE_exp
-# Classificação do IDE_exp
-if (IDE_exp < 6) {
-  cat("Fraca dependência espacial")
-} else if (IDE_exp >= 6 && IDE_exp < 13) {
-  cat("Moderada dependência espacial")
-} else {
-  cat("Forte dependência espacial")
-}
 # IDE no modelo Gaussiano
 IDE_gaus <- 0.504 * I * II * 100
-IDE_gaus
 # Classificação do IDE_gaus
 if (IDE_gaus < 9) {
   cat("Fraca dependência espacial")
