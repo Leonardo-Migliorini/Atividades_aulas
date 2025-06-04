@@ -1,9 +1,9 @@
 # initial values to test functions
-mu <- 0.58
-sigma <- 1
-nu <- 0.1
-tau <- 0.5
-x <- 0.7
+# mu <- 0.58
+# sigma <- 1
+# nu <- 0.1
+# tau <- 0.5
+# x <- 0.7
 
 # Unit Quantile Chen distribution functions ------------------------------------
 
@@ -47,11 +47,11 @@ dOIUQC <- function(x, mu, sigma, nu, log = FALSE) {
 }
 
 # checking dOIUQC function:
-dOIUQC(1, mu = 0.7, sigma = 2.1, nu = 0.1) # must return nu value
+# dOIUQC(1, mu = 0.7, sigma = 2.1, nu = 0.1) # must return nu value
 # Next 2 functions must return the same value
-dOIUQC(x, mu = 0.7, sigma = 2.1, nu = 0.1)
-(1 - nu) * dUQChen(x, mu = 0.7, sigma = 2.1)
-dOIUQC(0, mu = 0.7, sigma = 2.1, nu = 0.1) # must return 0, because it is not inflated in 0
+# dOIUQC(x, mu = 0.7, sigma = 2.1, nu = 0.1)
+# (1 - nu) * dUQChen(x, mu = 0.7, sigma = 2.1)
+# dOIUQC(0, mu = 0.7, sigma = 2.1, nu = 0.1) # must return 0, because it is not inflated in 0
 
 # cumulative distribution function
 pOIUQC <- function(q, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
@@ -83,12 +83,12 @@ pOIUQC <- function(q, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
 }
 
 # checking pOIUQC:
-x <- 0.7
+# x <- 0.7
 # Next 2 functions must return the same value
-pOIUQC(x, mu = 0.7, sigma = 0.5, nu = 0.1)
-(1 - nu) * pUQChen(x, mu = 0.7, sigma = 0.5)
-pOIUQC(0.9999, mu = 0.7, sigma = 2.1, nu = 0.1) # must return 1 - nu
-pOIUQC(1, mu = 0.7, sigma = 2.1, nu = 0.1) # must return 1
+# pOIUQC(x, mu = 0.7, sigma = 0.5, nu = 0.1)
+# (1 - nu) * pUQChen(x, mu = 0.7, sigma = 0.5)
+# pOIUQC(0.9999, mu = 0.7, sigma = 2.1, nu = 0.1) # must return 1 - nu
+# pOIUQC(1, mu = 0.7, sigma = 2.1, nu = 0.1) # must return 1
 
 # quantile function
 qOIUQC <- function(p, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
@@ -123,10 +123,10 @@ qOIUQC <- function(p, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
 }
 
 # checking qOIUQC:
-x <- 0.7
-u <- pOIUQC(x, mu = 0.7, sigma = 0.5, nu = 0.2) # value to test qOIUQC function
-qOIUQC(u, mu = 0.7, sigma = 0.5, nu = 0.2) # must return the x value
-qUQChen((u) / (1 - 0.2), mu = 0.7, sigma = 0.5) # must return the x value as well
+# x <- 0.7
+# u <- pOIUQC(x, mu = 0.7, sigma = 0.5, nu = 0.2) # value to test qOIUQC function
+# qOIUQC(u, mu = 0.7, sigma = 0.5, nu = 0.2) # must return the x value
+# qUQChen((u) / (1 - 0.2), mu = 0.7, sigma = 0.5) # must return the x value as well
 
 # inversion method for random generation
 rOIUQC <- function(n, mu, sigma, nu) {
@@ -151,8 +151,8 @@ rOIUQC <- function(n, mu, sigma, nu) {
   return(r)
 }
 
-# testing
-(aa <- rOIUQC(200, 0.5, 0.4, 0.2))
-summary(aa)
-sort(aa)
-sum(aa==1)/200 # must be close to nu value
+# testing rOIUQC function
+# (aa <- rOIUQC(200, 0.5, 0.4, 0.2))
+# summary(aa)
+# sort(aa)
+# sum(aa==1)/200 # must be close to nu value
