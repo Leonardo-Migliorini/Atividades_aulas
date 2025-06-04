@@ -44,10 +44,10 @@ dZIUQC <- function(x, mu, sigma, nu, log = FALSE) {
 }
 
 # checking dZIUQC function
-dZIUQC(0, mu = 0.7, sigma = 2.1, nu = 0.1) # = nu
-dZIUQC(x, mu = 0.7, sigma = 2.1, nu = 0.1)
-(1 - nu) * dUQChen(x, mu = 0.7, sigma = 2.1)
-dZIUQC(1, mu = 0.7, sigma = 2.1, nu = 0.1) # 0 because it is not inflated in one
+# dZIUQC(0, mu = 0.7, sigma = 2.1, nu = 0.1) # = nu
+# dZIUQC(x, mu = 0.7, sigma = 2.1, nu = 0.1)
+# (1 - nu) * dUQChen(x, mu = 0.7, sigma = 2.1)
+# dZIUQC(1, mu = 0.7, sigma = 2.1, nu = 0.1) # 0 because it is not inflated in one
 
 # cumulative distribution function
 
@@ -86,9 +86,9 @@ pZIUQC <- function(q, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
 }
 
 # checking pZIUQC
-pZIUQC(0, mu = 0.7, sigma = 2.1, nu = 0.1)
-pZIUQC(x, mu = 0.7, sigma = 0.5, nu = 0.1)
-nu + (1 - nu) * pUQChen(x, mu = 0.7, sigma = 0.5)
+# pZIUQC(0, mu = 0.7, sigma = 2.1, nu = 0.1)
+# pZIUQC(x, mu = 0.7, sigma = 0.5, nu = 0.1)
+# nu + (1 - nu) * pUQChen(x, mu = 0.7, sigma = 0.5)
 
 # quantile function
 qZIUQC <- function(p, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
@@ -127,9 +127,9 @@ qZIUQC <- function(p, mu, sigma, nu, lower.tail = TRUE, log.p = FALSE) {
 }
 
 # checking qZIUQC
-u <- pZIUQC(x, mu = 0.4, sigma = 0.5, nu = 0.1)
-qZIUQC(u, mu = 0.4, sigma = 0.5, nu = 0.1)
-qUQChen((u - nu) / (1 - nu), mu = 0.4, sigma = 0.5)
+# u <- pZIUQC(x, mu = 0.4, sigma = 0.5, nu = 0.1)
+# qZIUQC(u, mu = 0.4, sigma = 0.5, nu = 0.1)
+# qUQChen((u - nu) / (1 - nu), mu = 0.4, sigma = 0.5)
 
 # inversion method for random generation
 rZIUQC <- function(n, mu, sigma, nu) {
@@ -151,5 +151,5 @@ rZIUQC <- function(n, mu, sigma, nu) {
   r
 }
 
-(aa <- rZIUQC(200, 0.4,1,0.2))
-summary(aa)
+# (aa <- rZIUQC(200, 0.4,1,0.2))
+# summary(aa)
