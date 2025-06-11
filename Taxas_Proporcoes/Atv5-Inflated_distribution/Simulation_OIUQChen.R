@@ -38,11 +38,11 @@ logit_link <- make.link("logit")
 b1 <- 1.6
 b2 <- -0.7
 mu_true <- logit_link$linkinv(b1 + b2 * X)
-g1 <- 0.5
+g1 <- 0.6
 g2 <- -1
 sigma_true <- log_link$linkinv(g1 + g2 * X)
-nu_true <- 0.2
-R <- 100
+nu_true <- 0.15
+R <- 300
 mu_result <- matrix(NA, R, 2)
 sigma_result <- matrix(NA, R, 2)
 nu_result <- matrix(NA, R, 1)
