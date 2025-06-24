@@ -34,3 +34,8 @@ rUQChen <- function(n, mu, sigma, tau = 0.5) {
   
   return(y)
 }
+
+# Log-likelihood function expression
+
+# log(log(tau) * sigma / (1 - exp((-log(mu))^sigma))) - log(y) + (sigma - 1) * log(-log(y)) +
+#   (-log(y))^sigma + log(tau) / (1 - exp((-log(mu))^sigma)) * (1 - exp((-log(y))^sigma))
