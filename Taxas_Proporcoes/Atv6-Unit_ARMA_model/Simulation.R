@@ -1,3 +1,4 @@
+# Loading model functions ------------------------------------------------------
 source("UCHARMA_gen.R")
 source("UCHARMA_fit.R")
 
@@ -8,14 +9,14 @@ source("UCHARMA_fit.R")
 set.seed(15) # setting a seed
 n <- 250 # sample size
 R <- 100 # monte carlo iterations
-# model specification 
-ma <- 1 
+# model specification
+ma <- 1
 ar <- 1
 # fixing true par vales
-alpha_true <- 0.7
-phi_true <- 0.2
-theta_true <- 0.3
-sigma_true <- 0.7
+alpha_true <- 1.25
+phi_true <- 0.5
+theta_true <- 0.01
+sigma_true <- 1
 
 # simulation
 alpha_result <- phi_result <- theta_result <- sigma_result <- c()
@@ -50,6 +51,6 @@ result1 <- cbind(
   eqm_values
 )
 
-rownames(result1) <- c("alpha","phi", "theta", "sigma")
+rownames(result1) <- c("alpha", "phi", "theta", "sigma")
 colnames(result1) <- c("true value", "mean", "relative bias", "mse")
 print(round(result1, 2))
