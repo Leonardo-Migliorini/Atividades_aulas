@@ -1,6 +1,5 @@
-simu.ucharma <- function(n,phi=NA,theta=NA, alpha,sigma, tau=0.5,freq=12,link="logit")
+simu.barma <- function(n,phi=NA,theta=NA, alpha, shape2,freq=12,link="logit")
 {
-  source("UQChen Functions.r")
   if(any(is.na(phi)==F))
   {
     ar <- 1:length(phi)
@@ -24,7 +23,7 @@ simu.ucharma <- function(n,phi=NA,theta=NA, alpha,sigma, tau=0.5,freq=12,link="l
     if (linktemp == "link")
       linktemp <- eval(link)
   }
-  if (any(linktemp == c("logit", "probit", "cloglog")))
+  if (any(linktemp == c("logit", "probit", "cloglog", "log")))
   {  
     stats <- make.link(linktemp)
   }else{
@@ -56,7 +55,7 @@ simu.ucharma <- function(n,phi=NA,theta=NA, alpha,sigma, tau=0.5,freq=12,link="l
     {
       eta[i]  <- alpha + as.numeric(phi%*%ynew[i-ar]) + as.numeric(theta%*%error[i-ma])
       mu[i]   <- linkinv(eta[i])
-      y[i]    <- rUQChen(1,mu[i],sigma = sigma)
+      y[i]    <- rbeta(1,mu[i], shape2)
       ynew[i] <- linkfun(y[i])
       error[i]<- ynew[i]-eta[i]   
     }

@@ -130,96 +130,96 @@ ucharma.fit <- function(y, ar = NA, ma = NA, tau = .5, link = "logit", h = 1,
   #############################################################################
   
   # VETOR SCORE
-  escore.UCharma <- function(z) {
-    alpha <- z[1]
-    if (k == 0) beta <- as.matrix(0) else beta <- as.matrix(z[2:(k + 1)])
-    if (p1 == 0) {
-      phi <- as.matrix(0)
-      ar <- 1
-    } else {
-      phi <- as.matrix(z[(k + 2):(k + p1 + 1)])
-    }
-    if (q1 == 0) theta <- as.matrix(0) else theta <- as.matrix(z[(k + p1 + 2):(k + p1 + q1 + 1)])
-    # c_par <- z[length(z)]
-    
-    Xbeta <- X %*% beta
-    Xbeta_ar <- suppressWarnings(matrix(Xbeta, (n - 1), max(p, 1, na.rm = T)))
-    for (i in (m + 1):n)
-    {
-      eta[i] <- alpha + Xbeta[i] + (ynew_ar[(i - 1), ar] - Xbeta_ar[(i - 1), ar]) %*% phi + t(theta) %*% error[i - ma]
-      error[i] <- ynew[i] - eta[i]
-    }
-    
-    # TENHO QUE VERIFICAR
-    sigma <- z[length(z)]
-    # q_t <- linkinv(eta[(m+1):n])
-    mu <- linkinv(eta[(m + 1):n])
-    # x  <- y[(m+1):n]
-    x <- y1
-    Xbeta <- X %*% beta
-    for (i in 1:(n - m)) {
-      R[i, ] <- error[i + m - ma] * k_i
-    }
-    
-    for (i in (m + 1):n)
-    {
-      deta.dalpha[i] <- 1 - deta.dalpha[i - ma] %*% theta
-      deta.dbeta[i, ] <- X[i, ] - t(phi) %*% X[i - ar, ] - t(theta) %*% deta.dbeta[i - ma, ]
-      deta.dphi[i, ] <- ynew_ar[i - ar] - Xbeta[i - ar] - t(theta) %*% deta.dphi[i - ma, ]
-      deta.dtheta[i, ] <- R[(i - m), ] - t(theta) %*% deta.dtheta[i - ma, ]
-    }
-    
-    v <- deta.dalpha[(m + 1):n]
-    rM <- deta.dbeta[(m + 1):n, ]
-    rP <- deta.dphi[(m + 1):n, ]
-    rR <- deta.dtheta[(m + 1):n, ]
-    
-    mT <- diag(mu.eta(eta[(m + 1):n]))
-    
-    
-    # ell_q
-    
-    a_t <- 1/mu - exp((-log(x))^sigma) + 1
-    
-    
-    # ell_c_par
-    y_sust <- as.vector(
-      1 / sigma - log(-log(x)) * (((-log(x))^sigma * (exp((-log(x))^sigma) * mu - 1)) - 1)
-      
-    )
-    
-    Ualpha <- t(v) %*% mT %*% a_t
-    Ubeta <- t(rM) %*% mT %*% a_t
-    Uphi <- t(rP) %*% mT %*% a_t
-    Utheta <- t(rR) %*% mT %*% a_t
-    Uc <- sum(y_sust)
-    
-    rval <- c(Ualpha, Ubeta, Uphi, Utheta, Uc)
-    return(rval[rval != 0])
-  }
-  
+  # escore.UCharma <- function(z) {
+  #   alpha <- z[1]
+  #   if (k == 0) beta <- as.matrix(0) else beta <- as.matrix(z[2:(k + 1)])
+  #   if (p1 == 0) {
+  #     phi <- as.matrix(0)
+  #     ar <- 1
+  #   } else {
+  #     phi <- as.matrix(z[(k + 2):(k + p1 + 1)])
+  #   }
+  #   if (q1 == 0) theta <- as.matrix(0) else theta <- as.matrix(z[(k + p1 + 2):(k + p1 + q1 + 1)])
+  #   # c_par <- z[length(z)]
+  #   
+  #   Xbeta <- X %*% beta
+  #   Xbeta_ar <- suppressWarnings(matrix(Xbeta, (n - 1), max(p, 1, na.rm = T)))
+  #   for (i in (m + 1):n)
+  #   {
+  #     eta[i] <- alpha + Xbeta[i] + (ynew_ar[(i - 1), ar] - Xbeta_ar[(i - 1), ar]) %*% phi + t(theta) %*% error[i - ma]
+  #     error[i] <- ynew[i] - eta[i]
+  #   }
+  #   
+  #   # TENHO QUE VERIFICAR
+  #   sigma <- z[length(z)]
+  #   # q_t <- linkinv(eta[(m+1):n])
+  #   mu <- linkinv(eta[(m + 1):n])
+  #   # x  <- y[(m+1):n]
+  #   x <- y1
+  #   Xbeta <- X %*% beta
+  #   for (i in 1:(n - m)) {
+  #     R[i, ] <- error[i + m - ma] * k_i
+  #   }
+  #   
+  #   for (i in (m + 1):n)
+  #   {
+  #     deta.dalpha[i] <- 1 - deta.dalpha[i - ma] %*% theta
+  #     deta.dbeta[i, ] <- X[i, ] - t(phi) %*% X[i - ar, ] - t(theta) %*% deta.dbeta[i - ma, ]
+  #     deta.dphi[i, ] <- ynew_ar[i - ar] - Xbeta[i - ar] - t(theta) %*% deta.dphi[i - ma, ]
+  #     deta.dtheta[i, ] <- R[(i - m), ] - t(theta) %*% deta.dtheta[i - ma, ]
+  #   }
+  #   
+  #   v <- deta.dalpha[(m + 1):n]
+  #   rM <- deta.dbeta[(m + 1):n, ]
+  #   rP <- deta.dphi[(m + 1):n, ]
+  #   rR <- deta.dtheta[(m + 1):n, ]
+  #   
+  #   mT <- diag(mu.eta(eta[(m + 1):n]))
+  #   
+  #   
+  #   # ell_q
+  #   
+  #   a_t <- 1/mu - exp((-log(x))^sigma) + 1
+  #   
+  #   
+  #   # ell_c_par
+  #   y_sust <- as.vector(
+  #     1 / sigma - log(-log(x)) * (((-log(x))^sigma * (exp((-log(x))^sigma) * mu - 1)) - 1)
+  #     
+  #   )
+  #   
+  #   Ualpha <- t(v) %*% mT %*% a_t
+  #   Ubeta <- t(rM) %*% mT %*% a_t
+  #   Uphi <- t(rP) %*% mT %*% a_t
+  #   Utheta <- t(rR) %*% mT %*% a_t
+  #   Uc <- sum(y_sust)
+  #   
+  #   rval <- c(Ualpha, Ubeta, Uphi, Utheta, Uc)
+  #   return(rval[rval != 0])
+  # }
+  # 
   
   ##############################################################################
   # ATENCAO AQUI - USO DO VETOR SCORE
   opt <- optim(initial, loglik,
-               escore.UCharma, # mudar aqui
+               # escore.UCharma, # mudar aqui
                method = "BFGS", hessian = TRUE,
                control = list(fnscale = -1, maxit = maxit1, reltol = 1e-12)
   )
   
-  if (opt$conv != 0) {
-    warning("FUNCTION DID NOT CONVERGE WITH ANALITICAL GRADIENT!")
-    opt <- optim(initial, loglik,
-                 method = "BFGS", hessian = TRUE,
-                 control = list(fnscale = -1, maxit = maxit1, reltol = 1e-12)
-    )
-    if (opt$conv != 0) {
-      warning("FUNCTION DID NOT CONVERGE NEITHER WITH NUMERICAL GRADIENT!")
-    } else {
-      warning("IT WORKS WITH NUMERICAL GRADIENT!")
-    }
-  }
-  
+  # if (opt$conv != 0) {
+  #   warning("FUNCTION DID NOT CONVERGE WITH ANALITICAL GRADIENT!")
+  #   opt <- optim(initial, loglik,
+  #                method = "BFGS", hessian = TRUE,
+  #                control = list(fnscale = -1, maxit = maxit1, reltol = 1e-12)
+  #   )
+  #   if (opt$conv != 0) {
+  #     warning("FUNCTION DID NOT CONVERGE NEITHER WITH NUMERICAL GRADIENT!")
+  #   } else {
+  #     warning("IT WORKS WITH NUMERICAL GRADIENT!")
+  #   }
+  # }
+  # 
   z$conv <- opt$conv
   coef <- (opt$par)[1:(p1 + q1 + k + 2)]
   alpha <- coef[1]
