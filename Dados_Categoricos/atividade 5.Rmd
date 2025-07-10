@@ -1,0 +1,420 @@
+---
+title: "Atividade 5: solução dos exemplos do livro"
+author: "Leonardo P. Migliorini"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(knitr)
+library(kableExtra)
+```
+
+#### Tabela 7.7 - Estudo sobre doença coronária arterial
+
+Abaixo temos a tabela com os dados coletados no estudo sobre doença coronária arterial. Temos 3 variáveis, Sexo, ECG e presença ou ausência de doença no paciente.
+
+```{r}
+# Criar o dataframe com os dados
+dados_77 <- data.frame(
+  Sexo = factor(c("Feminino", "Feminino", "Masculino", "Masculino")),
+  ECG = factor(c("< 0,1 ST", ">= 0,1 ST", "< 0,1 ST", ">= 0,1 ST")),
+  Presente = c(4, 8, 9, 21),
+  Ausente = c(11, 10, 9, 6),
+  Total = c(15, 18, 18, 27)
+)
+
+dados <- do.call(rbind, lapply(1:nrow(dados_77), function(i) {
+  sexo_i <- dados_77$Sexo[i]
+  ecg_i <- dados_77$ECG[i]
+  presente_i <- dados_77$Presente[i]
+  ausente_i <- dados_77$Ausente[i]
+  
+  data.frame(
+    Sexo = rep(sexo_i, presente_i + ausente_i),
+    ECG = rep(ecg_i, presente_i + ausente_i),
+    Resultado = c(rep(1, presente_i), rep(0, ausente_i))
+  )
+}))
+
+# Exibir a tabela formatada
+ kable(dados_77)
+```
+
+Ajustando os modelos encaixados, considerando a presença de doença como variável resposta e Sexo e ECG como covariáveis dos modelos. Uma tabela para a Análise de Deviance (ANODEV) é apresentada abaixo:
+
+```{r}
+# Modelo 1: Apenas intercepto
+fit1 <- glm(Resultado ~ 1, data = dados, family = binomial)
+
+# Modelo 2: Intercepto e Sexo
+fit2 <- glm(Resultado ~ Sexo, data = dados, family = binomial)
+
+# Modelo 3: Intercepto, Sexo e ECG
+fit3 <- glm(Resultado ~ Sexo + ECG, data = dados, family = binomial)
+
+# Modelo 3: Intercepto, Sexo, ECG e interaçõa sexo*ecg
+fit4 <- glm(Resultado ~ Sexo * ECG, data = dados, family = binomial)
+
+anova_tab <- anova(fit1, fit2, fit3, fit4, test = "Chi")
+
+# Adicionando nomes descritivos aos modelos
+anova_tab <- cbind(
+  Modelo = c("Modelo 1: ~1",
+             "Modelo 2: ~Sexo",
+             "Modelo 3: ~Sexo + ECG",
+             "Modelo 4: ~Sexo * ECG"),
+  as.data.frame(anova_tab)
+)
+
+kable(anova_tab)
+```
+
+Pode-se observar que o modelo 2 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável Sexo é importante para explicar o desenvolvimento de doença coronária. Ainda o modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que a variável ECG também é significativa para explicar o desenvolvimento de doença coronária. Já a interação entre as variáveis foi não significativa. Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include=FALSE}
+summary(fit3)
+```
+
+\begin{equation}
+logito(\widehat{p}) = -1,1747 + 1,2770x_{i1} + 1,0545x_{i2}
+\end{equation}
+
+Abaixo, temos os gráficos para os resíduos de Pearson e deviance para o modelo 3. Podemos ver que todos os valores estão entre \([-2,2]\) indicando um bom ajuste do modelo. Ainda, obtivemos as estatísticas \(Q_{L} = 95,8996\) (\(p-\)valor \(\approx 1\)) e \(Q_{P} = 78,0124\) (\(p-\)valor \(\approx 1\)) indicando também um bom ajuste do modelo 3.
+
+```{r, include = FALSE}
+# resíduo deviance
+dev <- residuals(fit3, type = "deviance")
+QL <- sum(dev^2)
+p1 <- 1 - pchisq(QL, 1)
+cbind(QL, p1)
+
+# resíduo de pearson
+rpears <- residuals(fit3, type = "pearson")
+QP <- sum(rpears^2)
+p2 <- 1 - pchisq(QP, 1)
+cbind(QP, p2)
+```
+
+```{r}
+# Gráficos dos resíduos
+par(mfrow = c(1, 2))
+plot(rpears, ylab = "Residuos Pearson", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+plot(dev, ylab = "Residuos deviance", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+```
+
+Abaixo, temos a curva ROC e valores para a sensibildiade, especificidade, VPP, VPN e acurárica do modelo 3. A sensibilidade foi bem baixa, ou seja, o modelo apresentou dificuldade em especificar corretamente os indivíduos com deonça. Já a especificidade, indicou boa especificação dos não doentes. Quanto ao VPP e VPN, ambos também foram bem baixos, indicando dificuldade de classificação dos desfechos pelo modelo. A acurácia final do model foi de \(\approx 70\%\), o que pode ser considerada baixa, caso o modelo seja utilizado para classificação de novos indivíduos.
+
+```{r}
+# Curva ROC
+attach(dados)
+par(mfrow = c(1, 1))
+Epi::ROC(form = fit3$call$formula, plot = "ROC")
+```
+
+```{r, include = FALSE}
+# calculando o odds-ratio e IC para o odds
+odds1 <- exp(fit3$coefficients)
+li1 <- exp(fit3$coefficients - 1.96 * summary(fit3)$coefficients[, 2])
+ls1 <- exp(fit3$coefficients + 1.96 * summary(fit3)$coefficients[, 2])
+oddsr <- round(cbind(odds1, li1, ls1), 2)
+```
+
+Por fim, vamos analisar as *odds ratio* ajustadas do modelo 3.
+
+Obtemos uma *odds ratio* de 3,6 IC(1,35; 9,52) para os homens em relação as mulheres ajustada para ECG, indicando que os homens tem mais chance de desenvolverem doença coronária em relação as mulheres. Já a *odss ratio* para ECG $\leqslant 0,1$ em relação a ECG $<0,1$ foi de 2,87 IC(1,08;7,62); indicando que pacientes com ECG $\leqslant 0,1$ são mais propensos a desenvolver doença coronária.
+
+
+#### Tabela 7.12 - Estudo sobre infecções urinárias
+
+Abaixo temos a tabela com os dados coletados no estudo sobre tratamento de infecções urinárias. Novamente, temos 3 variáveis, Diagnóstico, Tratamento administrado e Cura do paciente.
+
+```{r}
+tab7.12_livro <- data.frame(
+"Diagnostico" = factor(c("Complicada", "Complicada", "Complicada", "Nao complicada", "Nao complicada", "Nao complicada")),
+"Tratamento" = factor(c("A", "B", "C", "A", "B", "C")),
+"Sim" = c(78, 101, 68, 40, 54, 34),
+"Nao" = c(28, 11, 46, 5, 5, 6),
+"Total" = c(106, 112, 114, 45, 59, 40)
+)
+
+tab7.12 <- do.call(rbind, lapply(1:nrow(tab7.12_livro), function(i) {
+  diag_i <- tab7.12_livro$Diagnostico[i]
+  trat_i <- tab7.12_livro$Tratamento[i]
+  sim_i <- tab7.12_livro$Sim[i]
+  nao_i <- tab7.12_livro$Nao[i]
+  
+  data.frame(
+    Diagnostico = rep(diag_i, sim_i + nao_i),
+    Tratamento = rep(trat_i, sim_i + nao_i),
+    Resposta = c(rep(1, sim_i), rep(0, nao_i))
+  )
+}))
+
+kable(tab7.12_livro)
+
+```
+
+Ajustando os modelos encaixados, considerando cura como variável resposta, diagnóstico e tratamento como covariáveis dos modelos. Uma tabela para a Análise de Deviance (ANODEV) é apresentada abaixo:
+
+```{r}
+# Modelo 1: Modelo Nulo
+fit11 <- glm(Resposta ~ 1, data = tab7.12, family = binomial)
+
+# Modelo 2: Intercepto e Diagnostico
+fit22 <- glm(Resposta ~ Diagnostico, data = tab7.12, family = binomial)
+
+# Modelo 3: Intercepto, Diagnostico e Tratamento
+fit33 <- glm(Resposta ~ Diagnostico + Tratamento, data = tab7.12, family = binomial)
+
+# Modelo 4: Intercepto, Diagnostico e Tratamento e interação Diagnostico e Tratamento
+fit44 <- glm(Resposta ~ Diagnostico * Tratamento, data = tab7.12, family = binomial)
+# Tabela de análise de deviance
+
+anova_tab <- anova(fit11, fit22, fit33, fit44, test = "Chi")
+
+# Adicionando os nomes dos modelos
+anova_tab <- cbind(
+  Modelo = c("Modelo 1: ~1",
+             "Modelo 2: ~Diagnostico",
+             "Modelo 3: ~Diagnostico + Tratamento",
+             "Modelo 4: ~Diagnostico * Tratamento"),
+  as.data.frame(anova_tab)
+)
+
+# Mostrando com kable
+library(knitr)
+kable(anova_tab, digits = 3, caption = "Análise de Deviance entre os modelos")
+```
+
+```{r, include=FALSE}
+summary(fit33)
+```
+
+Assim como no exemplo anterior, observa-se que o modelo 2 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável diagnóstico é importante para explicar cura do paciente. Novamente, o modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que o tratamento administrados também é significativo para explicar a cura do paciente. Já a interação entre as variáveis foi não significativa. Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include = FALSE}
+# resíduo deviance
+dev <- residuals(fit33, type = "deviance")
+QL <- sum(dev^2)
+p1 <- 1 - pchisq(QL, 2)
+cbind(QL, p1)
+
+# resíduo de pearson
+rpears <- residuals(fit33, type = "pearson")
+QP <- sum(rpears^2)
+p2 <- 1 - pchisq(QP, 2)
+cbind(QP, p2)
+```
+
+\begin{equation}
+logito(\widehat{p}) = -1,0415 + 0,96160x_{i1} + 0,9760x_{i21} - 0,5837x_{i22}
+\end{equation}
+
+Observação: No modelo acima, o tratamento de referência é o tratamento A.
+Abaixo, temos os gráficos para os resíduos de Pearson e deviance para o modelo 3. Podemos ver que todos os valores estão entre \([-2,5,2,5]\) indicando um bom ajuste do modelo. Ainda, obtivemos as estatísticas \(Q_{L} = 450,071\) (\(p-\)valor \(\approx 1\)) e \(Q_{P} = 495,2888\) (\(p-\)valor \(\approx 1\)) indicando também um bom ajuste do modelo 3.
+
+```{r}
+# Gráficos dos resíduos
+par(mfrow = c(1, 2))
+plot(rpears, ylab = "Residuos Pearson", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+plot(dev, ylab = "Residuos deviance", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+```
+
+Abaixo, temos a curva ROC e valores para a sensibildiade, especificidade, VPP, VPN e acurárica do modelo 3. A sensibilidade foi baixa, ou seja, o modelo apresentou dificuldade em especificar corretamente os indivíduos com deonça. Já a especificidade, indicou moderada especificação dos não doentes. Quanto ao VPP e VPN, o VPP foi moderado e o VPN foi muito baixo, indicando dificuldade de classificação dos desfechos pelo modelo. A acurácia final do model foi de \(\approx 70\%\), o que pode ser considerada baixa, caso o modelo seja utilizado para classificação de novos indivíduos.
+
+```{r}
+# Curva ROC
+attach(tab7.12)
+par(mfrow = c(1, 1))
+Epi::ROC(form = fit33$call$formula, plot = "ROC")
+```
+
+
+```{r, include = FALSE}
+# calculando o odds-ratio e IC para o odds
+odds2 <- exp(fit33$coefficients)
+li2 <- exp(fit33$coefficients - 1.96 * summary(fit33)$coefficients[, 2])
+ls2 <- exp(fit33$coefficients + 1.96 * summary(fit33)$coefficients[, 2])
+oddsr <- round(cbind(odds2, li2, ls2), 2)
+```
+
+Por fim, vamos analisar as *odds ratio* ajustadas do modelo 3.
+
+Obtemos uma *odds ratio* de 2,62 IC(1,45; 4,71) para indivíduos diagnosticados com infecção não complicada ajustado aos tratamentos, indicando que os indivíduos com infecções não complicadas tem chance maiores de se curarem em relação aos com infecções complicadas.
+Obtemos uma *odds ratio* de 2,65 IC(1,39;5,08) do tratamento B em relação ao tratamento A, ajustado ao diagnóstico. Indicando que o tratamento B tem chances maiores de melhora em relação ao tratamento A. Ainda, obtemos uma *odds ratio* de 1,79 IC(1,07;3,01) do tratamento A em relação ao tratamento C e uma *odds ratio* de 4,76 IC(1,48;15,29). 
+
+No caso, conclui-se que o tratamento A é superior ao tratamento C e que o tratamento B é superior aos tratamentos A e C. Logo, sugere-se a preferência pelo administração do tratamento B nos pacientes.
+
+#### Tabela 7.18 - Estudo sobre bronquite
+
+Abaixo temos a tabela com os dados coletados no estudo sobre tratamento de bronquite Temos 4 variáveis, status de fumo, status socioeconômico, idade e presença de bronquite.
+
+
+```{r}
+tab7.18 <- data.frame(
+  smk = c(0, 0, 0, 0, 1, 1, 1, 1),
+  ses = c(1, 1, 0, 0, 1, 1, 0, 0),
+  idade = c(0, 1, 0, 1, 0, 1, 0, 1),
+  Sim = c(38, 48, 28, 40, 84, 102, 47, 59),
+  Nao = c(73, 86, 67, 84, 89, 46, 96, 53),
+  Total = c(111, 134, 95, 124, 173, 148, 143, 112)
+)
+
+tab7.18$smk <- factor(tab7.18$smk, levels = c(0, 1), labels = c("nao", "sim"))
+tab7.18$ses <- factor(tab7.18$ses, levels = c(0, 1), labels = c("baixo", "alto"))
+tab7.18$idade <- factor(tab7.18$idade, levels = c(0, 1), labels = c("< 40", ">= 40"))
+
+
+tab7.18_extenso <- do.call(rbind, lapply(1:nrow(tab7.18), function(i) {
+  n_sim <- tab7.18$Sim[i]
+  n_nao <- tab7.18$Nao[i]
+  total <- n_sim + n_nao
+  
+  data.frame(
+    smk = rep(tab7.18$smk[i], total),
+    ses = rep(tab7.18$ses[i], total),
+    idade = rep(tab7.18$idade[i], total),
+    Resposta = factor(c(rep(0, n_sim), rep(1, n_nao)),
+                      levels = c(1, 0))
+  )
+}))
+
+kable(tab7.18)
+
+```
+
+Ajustando os modelos encaixados, considerando bronquite como variável resposta, status de fumo, status socioeconômico e idade como covariáveis dos modelos. Uma tabela para a Análise de Deviance (ANODEV) é apresentada abaixo:
+
+```{r}
+
+modelo1 <- glm(Resposta ~ 1, data = tab7.18_extenso, family = binomial)
+modelo2 <- glm(Resposta ~ smk, data = tab7.18_extenso, family = binomial)
+modelo3 <- glm(Resposta ~ smk + ses, data = tab7.18_extenso, family = binomial)
+modelo4 <- glm(Resposta ~ smk + ses + idade, data = tab7.18_extenso, family = binomial)
+modelo5 <- glm(Resposta ~ smk + ses + idade + smk * ses, data = tab7.18_extenso, family = binomial)
+modelo6 <- glm(Resposta ~ smk * ses + smk * idade, data = tab7.18_extenso, family = binomial)
+modelo7 <- glm(Resposta ~ smk * ses + smk * idade + ses * idade, data = tab7.18_extenso, family = binomial)
+modelo8 <- glm(Resposta ~ smk * ses * idade, data = tab7.18_extenso,family = binomial)
+
+# Tabela de anova
+anova_tab <- anova(modelo1, modelo2, modelo3, modelo4, modelo5, modelo6, modelo7, modelo8, test = "Chi")
+
+# Adicionando os nomes dos modelos
+anova_tab <- cbind(
+  Modelo = c(
+    "Modelo 1: ~1",
+    "Modelo 2: ~smk",
+    "Modelo 3: ~smk + ses",
+    "Modelo 4: ~smk + ses + idade",
+    "Modelo 5: ~smk + ses + idade + smk:ses",
+    "Modelo 6: ~smk*ses + smk:idade",
+    "Modelo 7: ~smk*ses + smk:idade + ses:idade",
+    "Modelo 8: ~smk*ses*idade"
+  ),
+  as.data.frame(anova_tab)
+)
+
+# Exibindo a tabela com kable
+library(knitr)
+kable(anova_tab, digits = 3, caption = "Análise de Deviance entre os modelos")
+
+```
+
+Assim como no exemplo anterior, observa-se que o modelo 2 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável diagnóstico é importante para explicar cura do paciente. Novamente, o modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que o tratamento administrados também é significativo para explicar a cura do paciente. Já a interação entre as variáveis foi não significativa. Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include=FALSE}
+summary(modelo6)
+```
+
+
+\begin{equation}
+logito(\widehat{p}) = -1,8533 + 0,1306x_{i1} + 0,1852x_{i2} + 0,0973x_{i3} + 0,4859x_{i1}x_{i2} + 0,7422x_{i1}x_{i3}
+\end{equation}
+
+Abaixo, temos os gráficos para os resíduos de Pearson e deviance para o modelo 3. Podemos ver que todos os valores estão entre \([-2,2]\) indicando um bom ajuste do modelo. Ainda, obtivemos as estatísticas \(Q_{L} = 1347,847\) (\(p-\)valor \(\approx 1\)) e \(Q_{P} = 1039,979\) (\(p-\)valor \(\approx 1\)) indicando também um bom ajuste do modelo 3.
+
+
+```{r, include = FALSE}
+# resíduo deviance
+dev <- residuals(modelo6, type = "deviance")
+QL <- sum(dev^2)
+p1 <- 1 - pchisq(QL, 2)
+cbind(QL, p1)
+
+# resíduo de pearson
+rpears <- residuals(modelo6, type = "pearson")
+QP <- sum(rpears^2)
+p2 <- 1 - pchisq(QP, 2)
+cbind(QP, p2)
+```
+
+```{r}
+# Gráficos dos resíduos
+par(mfrow = c(1, 2))
+plot(rpears, ylab = "Residuos Pearson", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+plot(dev, ylab = "Residuos deviance", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+```
+
+Abaixo, temos a curva ROC e valores para a sensibildiade, especificidade, VPP, VPN e acurárica do modelo 3. A sensibilidade foi baixa, ou seja, o modelo apresentou dificuldade em especificar corretamente os indivíduos com deonça. Já a especificidade, indicou moderada especificação dos não doentes. Quanto ao VPP e VPN, ambos também foram bem baixos, indicando dificuldade de classificação dos desfechos pelo modelo. A acurácia final do model foi de \(\approx 64\%\), o que pode ser considerada baixa, caso o modelo seja utilizado para classificação de novos indivíduos.
+
+```{r}
+# Curva ROC
+attach(tab7.18_extenso)
+par(mfrow = c(1, 1))
+Epi::ROC(form = modelo6$call$formula, plot = "ROC")
+```
+
+```{r, include = FALSE}
+# calculando o odds-ratio e IC para o odds
+odds3 <- exp(modelo6$coefficients)
+li3 <- exp(modelo6$coefficients - 1.96 * summary(modelo6)$coefficients[, 2])
+ls3 <- exp(modelo6$coefficients + 1.96 * summary(modelo6)$coefficients[, 2])
+oddsr <- round(cbind(odds3, li3, ls3), 2)
+```
+
+Por fim, vamos analisar as *odds ratio* ajustadas do modelo 6.
+
+Nesse caso, como o modelo conta com interações das 3 variáveis principais, temos que tomar um certo cuidado ao interpretar as *odds ratio* do modelo.
+
+Caso da variável status de fumo:
+
+Considerando status socieconomico alto e idade < 40 anos, temos umas *odds ratio* de 1,14 IC(0,71;1,83), indicando que fumar nesse caso aumenta levemente a chance do indivíduo ter bronquite.
+
+Considerando status socieconomico baixo e idade < 40 anos, temos umas *odds ratio* de 1,85 IC(0,69;4,98), indicando que fumar nesse caso aumenta moderadamente a chance do indivíduo ter bronquite.
+
+Considerando status socieconomico alto e idade $\geqslant$ 40 anos, temos umas *odds ratio* de 2,40 IC(0,89;6,44), indicando que fumar nesse caso aumenta bastante a chance do indivíduo ter bronquite.
+
+Considerando status socieconomico baixo e idade $\geqslant$ 40 anos, temos umas *odds ratio* de 3,89 IC(0,86;17,56), indicando que fumar nesse caso aumenta drasticamente a chance do indivíduo ter bronquite.
+
+No geral conclui-se que fumar aumenta a chance do indivíduo ter bronquite independentemente do status socioeconomico e idade.
+
+Caso da variável status socieconomico:
+
+Considerando o individuo como não fumante, ajustado a idade, temos umas *odds ratio* de 1,20 IC(0,82;1,77), indicando que o status socieconomico baixo aumenta levemente a chance do indivíduo ter bronquite.
+
+Considerando o individuo como fumante, ajustado a idade, temos umas *odds ratio* de 1,96 IC(0,69;4,98), indicando que o status socieconomico baixo aumenta bastante a chance do indivíduo ter bronquite.
+
+No geral conclui-se que indivíduos com status socioeconomico baixo apresentam maior chance de ter bronquite independentemente de fumar ou não.
+
+Caso da variável idade:
+
+Considerando o individuo como não fumante, ajustado a idade, temos umas *odds ratio* de 1,10 IC(0,75;1,63), indicando que indivíduos com idade acima de 40 anos apresentam maior chance de ter bronquite.
+
+Considerando o individuo como fumante, ajustado a idade, temos umas *odds ratio* de 2,32 IC(0,45;12), indicando que indivíduos com idade acima de 40 anos apresentam maior chance de ter bronquite.
+
+No geral conclui-se que indivíduos idade acima de 40 anos apresentam maior chance de ter bronquite independentemente de fumar ou não.
+

@@ -1,0 +1,24 @@
+---
+title: "atividade 4"
+author: "Leonardo P. Migliorini"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(knitr)
+library(kableExtra)
+
+dados <- readxl::read_xlsx("dados_94_alunos.xlsx")
+```
+
+```{r}
+
+```
+
