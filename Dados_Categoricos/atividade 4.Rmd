@@ -16,9 +16,212 @@ library(knitr)
 library(kableExtra)
 
 dados <- readxl::read_xlsx("dados_94_alunos.xlsx")
+
+dados_mod1 <- dados |> 
+  dplyr::select(
+    sexo, altura, peso, idade
+  )
+
+dados_mod2 <- dados |> 
+  dplyr::select(
+    sexo, altura, peso, idade
+  ) |> 
+  dplyr::mutate(
+    altura = dplyr::case_when(
+      altura >= median(altura) ~ 1,
+      TRUE ~ 0
+    ),
+    peso = dplyr::case_when(
+      peso >= median(peso) ~ 1,
+      TRUE ~ 0
+    ),
+    idade = dplyr::case_when(
+      peso >= median(idade) ~ 1,
+      TRUE ~ 0
+    )
+  )
+
+```
+
+#### Ajuste modelo contínuo
+
+Abaixo, temos o ajuste dos modelos encaixados considerando as variáveis altura, peso e idade como contínuas. Uma tabela para a Análise de Deviance (ANODEV) é apresentada abaixo:
+
+```{r}
+# Modelo 1: Modelo Nulo
+fit1 <- glm(sexo ~ 1, data = dados_mod1, family = binomial)
+
+# Modelo 2: Sexo e altura
+fit2 <- glm(sexo ~ altura, data = dados_mod1, family = binomial)
+
+# Modelo 3: Sexo altura e peso
+fit3 <- glm(sexo ~ altura + peso, data = dados_mod1, family = binomial)
+
+# Modelo 4: Sexo altura peso e idade
+fit4 <- glm(sexo ~ altura + peso + idade, data = dados_mod1, family = binomial)
+
+# Tabela da anova
+anova_tab <- anova(fit1, fit2, fit3, fit4, test = "Chi")
+
+# Adicionando os nomes dos modelos
+anova_tab <- cbind(
+  Modelo = c(
+    "Modelo 1: ~1",
+    "Modelo 2: ~altura",
+    "Modelo 3: ~altura + peso",
+    "Modelo 4: ~altura + peso + idade"
+  ),
+  as.data.frame(anova_tab)
+)
+
+# Mostrando a tabela com kable
+library(knitr)
+kable(anova_tab, digits = 3, caption = "Análise de Deviance entre os modelos")
+```
+
+Pode-se observar que o modelo 2 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável altura é importante para classificar o sexo dos alunos. Ainda o modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que a variável peso também é significativa para classificar o sexo dos alunos. Já a variável idade foi não significativa. Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include = FALSE}
+summary(fit3)
+```
+
+\begin{equation}
+logito(\widehat{p}) = 81,38394 + -0,43835x_{i1} + -0,09863x_{i2},
+\end{equation}
+
+em que \(x_{i1}\) representa a variável altura e \(x_{i2}\) representa o peso.
+
+Abaixo, temos os gráficos para os resíduos de Pearson e deviance para o modelo 3. Podemos ver que todos os valores estão entre \([-2,2]\) indicando um bom ajuste do modelo. Ainda, obtivemos as estatísticas \(Q_{L} = 41,08545\) (\(p-\)valor \(\approx 1\)) e \(Q_{P} = 47,82678\) (\(p-\)valor \(\approx 1\)) indicando também um bom ajuste do modelo 3.
+
+```{r, include = FALSE}
+# resíduo deviance
+dev <- residuals(fit3, type = "deviance")
+QL <- sum(dev^2)
+p1 <- 1 - pchisq(QL, 1)
+cbind(QL, p1)
+
+# resíduo de pearson
+rpears <- residuals(fit3, type = "pearson")
+QP <- sum(rpears^2)
+p2 <- 1 - pchisq(QP, 1)
+cbind(QP, p2)
 ```
 
 ```{r}
-
+# Gráficos dos resíduos
+par(mfrow = c(1, 2))
+plot(rpears, ylab = "Residuos Pearson", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+plot(dev, ylab = "Residuos deviance", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
 ```
+
+Abaixo, temos a curva ROC e valores para a sensibildiade, especificidade, VPP, VPN e acurárica do modelo 3. A sensibilidade e especificidade foram muito altes, ou seja, o modelo apresentou facilidade em especificar corretamente ambos os sexos. Quanto ao VPP e VPN, ambos foram bem baixos, indicando dificuldade de classificação dos sexos pelo modelo. No entanto, a acurácia final do model foi de \(97\%\), indicando uma alta capacidade de classificação do modelo.
+
+```{r}
+# Curva ROC
+attach(dados)
+par(mfrow = c(1, 1))
+Epi::ROC(form = fit3$call$formula, plot = "ROC")
+```
+
+Quanto a interpretação dos coeficientes, serão omitidas, pois o efeito das covariáveis são mais difícies de serem calculadas quando as mesmas são contínuas. E a metodologia correta para esse caso, não foco da disciplina.
+
+### Ajuste modelo categórico
+
+Portanto, vamos ajustar novamente o modelo considerando dessa vez um corte na mediana de cada covariável.
+A idade foi dividida em alunos com menos de 238 meses mairoes ou iguais a 238 meses, o peso foi dividido em menores de 65Kg e mairoes ou iguais de 65Kg e a altura foi dividida em menores do que 169cm e mairoes ou iguais do que 169cm.
+
+Abaixo, temos o ajuste dos modelos encaixados em uma tabela ANODEV.
+
+```{r}
+# Modelo 1: Modelo Nulo
+fit1 <- glm(sexo ~ 1, data = dados_mod2, family = binomial)
+
+# Modelo 2: Sexo e altura
+fit2 <- glm(sexo ~ altura, data = dados_mod2, family = binomial)
+
+# Modelo 3: Sexo altura e peso
+fit3 <- glm(sexo ~ altura + peso, data = dados_mod2, family = binomial)
+
+# Modelo 4: Sexo altura peso e idade
+fit4 <- glm(sexo ~ altura + peso + idade, data = dados_mod2, family = binomial)
+
+# Tabela da anova
+anova_tab <- anova(fit1, fit2, fit3, fit4, test = "Chi")
+
+# Adicionando os nomes dos modelos
+anova_tab <- cbind(
+  Modelo = c(
+    "Modelo 1: ~1",
+    "Modelo 2: ~altura",
+    "Modelo 3: ~altura + peso",
+    "Modelo 4: ~altura + peso + idade"
+  ),
+  as.data.frame(anova_tab)
+)
+
+# Mostrando a tabela com kable
+library(knitr)
+kable(anova_tab, digits = 3, caption = "Análise de Deviance entre os modelos")
+```
+
+Observa-se que tivemos a mesma escolha de ajustes para o caso anterior. No entanto a estrutura dos logitos para esse caso é dada por:
+
+```{r, include = FALSE}
+summary(fit3)
+```
+
+\begin{equation}
+logito(\widehat{p}) = 4,9400 + -4,6661x_{i1} + -3,2760x_{i2}.
+\end{equation}
+
+
+```{r, include = FALSE}
+# resíduo deviance
+dev <- residuals(fit3, type = "deviance")
+QL <- sum(dev^2)
+p1 <- 1 - pchisq(QL, 1)
+cbind(QL, p1)
+
+# resíduo de pearson
+rpears <- residuals(fit3, type = "pearson")
+QP <- sum(rpears^2)
+p2 <- 1 - pchisq(QP, 1)
+cbind(QP, p2)
+```
+
+Abaixo, temos os gráficos para os resíduos de Pearson e deviance para o modelo 3. Podemos ver que todos os valores continuam entre \([-2,2]\) indicando um bom ajuste do modelo. Ainda, obtivemos as estatísticas \(Q_{L} = 41,74805\) (\(p-\)valor \(\approx 1\)) e \(Q_{P} = 65,64573\) (\(p-\)valor \(\approx 1\)) indicando também um bom ajuste do modelo 3.
+
+
+```{r}
+# Gráficos dos resíduos
+par(mfrow = c(1, 2))
+plot(rpears, ylab = "Residuos Pearson", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+plot(dev, ylab = "Residuos deviance", pch = 16, ylim = c(-2, 2))
+abline(h = 0, lty = 3)
+```
+
+A curva ROC é idêntica ao ajuste anterior.
+
+```{r}
+# Curva ROC
+attach(dados)
+par(mfrow = c(1, 1))
+Epi::ROC(form = fit3$call$formula, plot = "ROC")
+```
+
+```{r, include = FALSE}
+# calculando o odds-ratio e IC para o odds
+odds1 <- exp(fit3$coefficients)
+li1 <- exp(fit3$coefficients - 1.96 * summary(fit3)$coefficients[, 2])
+ls1 <- exp(fit3$coefficients + 1.96 * summary(fit3)$coefficients[, 2])
+oddsr <- round(cbind(odds1, li1, ls1), 3)
+```
+
+Interpretação das *odds ratio*:
+
+Obtivemos uma *odds ratio* de 0,009 IC(0,001;0,066) para a altura ajustada ao peso. Ou seja, quanto maior a altura, menor a chance de ser do sexo feminino. Já para o peso ajustado a altura, obtivemos uma *odds ratio* de 0,038 IC(0,007;0,219). Ou seja, quanto maior o peso, menor a chance de ser do sexo feminino
+
 
