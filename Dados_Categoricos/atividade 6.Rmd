@@ -1,5 +1,5 @@
 ---
-title: "atividade 6"
+title: "Atividade 7"
 author: "Leonardo P. Migliorini"
 output: html_document
 ---
@@ -14,5 +14,82 @@ library(dplyr)
 library(reshape2)
 library(knitr)
 library(kableExtra)
+library(VGAM)
+
+dados_temp <- data.frame(
+  tabaco = c(1, 1, 0, 0), # 1 indica sim e 0 não
+  cardiaco = c(1, 0, 1, 0), # 1 indica sim e 0 não
+  Excelente = c(27, 402, 83, 1959),
+  Bom = c(76, 1050, 406, 4521),
+  Moderado = c(101, 522, 442, 2243),
+  Ruim = c(39, 145, 114, 405)
+)
+
+dados <- dados_temp |> 
+  dplyr::mutate(
+    tabaco = as.factor(tabaco),
+    cardiaco = as.factor(cardiaco),
+  )
+
+dados_prep <- data.frame(
+  tabaco = c(1, 1, 0, 0), # 1 indica sim e 0 não
+  cardiaco = c(1, 0, 1, 0), # 1 indica sim e 0 não
+  Excelente = c(27/243, 402/2119, 83/1045, 1959/9128),
+  Bom = c(76/243, 1050/2119, 406/1045, 4521/9128),
+  Moderado = c(101/243, 522/2119, 442/1045, 2243/9128),
+  Ruim = c(39/243, 145/2119, 114/1045, 405/9128)
+)
 ```
 
+### Representação gráfica dos dados
+
+```{r}
+# Ajustes dos fatores
+dados_prep$tabaco <- factor(dados_prep$tabaco, levels = c(1, 0), labels = c("Sim", "Não"))
+dados_prep$cardiaco <- factor(dados_prep$cardiaco, levels = c(1, 0), labels = c("Sim", "Não"))
+
+
+# Transformação em formato longo
+dados_melt <- melt(dados_prep, id.vars = c("tabaco", "cardiaco"))
+dados_melt <- rename(dados_melt, Saude = variable, Proporcao = value)
+
+# Separando para tabagistas e não tabagistas
+dados_tabaco_sim <- subset(dados_melt, tabaco == "Sim")
+dados_tabaco_nao <- subset(dados_melt, tabaco == "Não")
+
+# Função de plot
+plot_grafico <- function(dados) {
+  ggplot(dados, aes(x = cardiaco, y = Proporcao, fill = Saude)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(x = "Problema Cardíaco", y = "Proporção de casos", fill = "Estado de Saúde") +
+    scale_fill_manual(values = c("Excelente" = "gray20", "Bom" = "gray40", "Moderado" = "gray60", "Ruim" = "gray80")) +
+    ggtitle(paste("Uso de Tabaco:", unique(dados$tabaco))) +
+    theme_bw() +
+    geom_text(aes(label = paste0(round(Proporcao * 100), "%")), 
+              position = position_dodge(width = 0.9), vjust = -0.5, size = 3) +
+    ylim(0, 1) +
+    theme(legend.position = c(0.15, 0.8),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.border = element_blank(),
+          axis.line = element_line(),
+          axis.ticks = element_line(colour = "black"))
+}
+
+# Gerar os gráficos
+plot_grafico(dados_tabaco_sim)
+plot_grafico(dados_tabaco_nao)
+
+```
+
+
+### Ajuste Modelo Logitos Cumulativos
+
+```{r}
+
+```
+
+### Ajuste Modelo Logito com categorias adjascentes
+
+
+### Ajuste Modelo Logito de razão contínua
