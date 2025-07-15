@@ -243,6 +243,19 @@ ggplot(data, aes(x = Observacao, y = Residuos)) +
 
 #### Interpretação do ajuste:
 
+Logito 1:
+
+Na primeira equação, que modela a chance de estar em estado de saúde excelente em relação as demais, observa-se que indivíduos tabagistas ($Z = 1$) e sem ploblemas cardíacos ($X = 0$) tem chance 0.24 de estarem com estado de saúde excelente em comparação as demais. Para tabagistas ($Z = 1$) e com ploblemas cardíacos ($X = 1$), temos uma chance de 0,06 do indivíduo apresentar estado de saúde excelente. Para não tabagistas e sem problemas cardíacos, temos uma chance de 0.27 de apresentar estado de saúde excelente, e para não tabagistas, com problemas cardíacos temos uma chance de 0.07.
+
+Logito 2:
+
+Na segunda equação, temos à chance de estar no estado de saúde bom ou superior em relação a um estado inferior. Para tabagistas e sem ploblemas cardíacos temos uma chance 2,16 de estarem com estado de saúde pelo menos bom. Para tabagistas e com ploblemas cardíacos, temos uma chance de 0,77 do indivíduo apresentar estado de saúde ao menos bom. Para não tabagistas e sem problemas cardíacos, temos uma chance de 2,45 de apresentar estado de saúde bom ou melhor, e para não tabagistas com problemas cardíacos temos uma chance de 0,88.
+
+Logito 3:
+
+Por fim, a terceira equação modela a chance de estar com estado de saúde moderado ou melhor em relação a estar na categoria ruim. Nesse caso, tabagistas com ausência de ploblemas cardíacos tem uma chance 13,73 de estarem com estado de saúde moderado ou superior. Para tabagistas e com ploblemas cardíacos, temos uma chance de 4,90 do indivíduo apresentar estado de saúde moderado ou superior. Para não tabagistas e sem problemas cardíacos, temos uma chance de 21,76 de apresentar estado de saúde como moderado ou superior, e para não tabagistas com problemas cardíacos temos uma chance de 7,76.
+
+Os resultados obtidos por meio do modelo de logitos cumulativos indicam que a presença de problema cardíaco está associada a menores chances de os indivíduos se encontrarem em melhores estados de saúde, independentemente do tabagismo. Além disso, observa-se que, para uma mesma condição cardíaca, indivíduos não tabagistas tendem a apresentar maiores chances de estarem em melhores categorias de saúde em comparação aos tabagistas. Esses achados estão em conformidade com a expectativa clínica de que tanto o tabagismo quanto os problemas cardíacos estão negativamente associados à condição geral de saúde.
 
 ### Ajuste Modelo Logito com categorias adjascentes
 
@@ -391,6 +404,21 @@ ggplot(data, aes(x = Observacao, y = Residuos)) +
 
 #### Interpretação do ajuste:
 
+Logito 1:
+
+Na primeira equação, modela-se a chance de estar em estado de saúde excelente em relação ao bom. Observa-se que indivíduos tabagistas ($X_1 = 1$) e sem ploblemas cardíacos ($X_2 = 0$) tem chance igual a 2,51 de estarem com estado de saúde excelente em comparação ao bom. Para tabagistas ($X_1 = 1$) e com ploblemas cardíacos ($X_2 = 1$), temos uma chance de 4,66 do indivíduo apresentar estado de saúde excelente sobre o bom. Para não tabagistas e sem problemas cardíacos, temos uma chance de 2,32 de apresentar estado de saúde excelente, e para não tabagistas com problemas cardíacos temos uma chance de 4,30.
+
+
+Logito 2:
+
+Na segunda equação, a comparação é entre as categorias bom e moderado. Temos que indivíduos tabagistas e sem ploblemas cardíacos a chance é de 2,05 de estarem com estado de saúde bom em comparação ao moderado. Para tabagistas e com ploblemas cardíacos, temos uma chance de 4,57 do indivíduo apresentar estado de saúde bom sobre o moderado. Para não tabagistas e sem problemas cardíacos, temos uma chance de 2,01 de apresentar estado de saúde bom, e para não tabagistas com problemas cardíacos temos uma chance de 4,66.
+
+Logito 3:
+
+A terceira equação compara os estados moderado e ruim. Temos que indivíduos tabagistas e sem ploblemas cardíacos a chance é de 0,28 de estarem com estado de saúde moderado em comparação ao ruim. Para tabagistas e com ploblemas cardíacos, temos uma chance de 0,39 do indivíduo apresentar estado de saúde moderado sobre o ruim. Para não tabagistas e sem problemas cardíacos, temos uma chance de 0,18 de apresentar estado de saúde moderado, e para não tabagistas com problemas cardíacos temos uma chance de 0,26.
+
+Os resultados indicam que a presença de problema cardíaco está consistentemente associada a maiores chances de o indivíduo se encontrar em um melhor estado de saúde em relação à categoria imediatamente inferior, o que pode refletir vieses amostrais ou limitações do modelo. O efeito do tabagismo é menos expressivo nas primeiras transições, mas na comparação entre os estados moderado e ruim, observa-se uma redução acentuada nas chances, sugerindo possível associação entre o tabagismo e piores condições de saúde nessa faixa da escala.
+
 
 ### Ajuste Modelo Logito de razão contínua
 
@@ -537,4 +565,19 @@ ggplot(data, aes(x = Observacao, y = Residuos)) +
 ```
 
 #### Interpretação do ajuste:
+
+Logito 1:
+
+Na primeira equação, que modela a chance de estar em estado de saúde excelente em relação as demais, observa-se que indivíduos tabagistas ($X_1 = 1$) e sem ploblemas cardíacos ($X_2 = 0$) tem chance 4,14 de estarem com estado de saúde excelente em comparação as demais. Para tabagistas ($X_1 = 1$) e com ploblemas cardíacos ($X_2 = 1$), temos uma chance de 11,7 do indivíduo apresentar estado de saúde excelente. Para não tabagistas e sem problemas cardíacos, temos uma chance de 3,67 de apresentar estado de saúde excelente, e para não tabagistas com problemas cardíacos temos uma chance de 10,38.
+
+Logito 2:
+
+Na segunda equação, relacionada à chance de estar no estado de saúde bom em relação a um estado inferior. Para tabagistas e sem ploblemas cardíacos temos uma chance 0,64 de estarem com estado de saúde bom em comparação aos estados inferiores. Para tabagistas e com ploblemas cardíacos, temos uma chance de 1,57 do indivíduo apresentar estado de saúde bom. Para não tabagistas e sem problemas cardíacos, temos uma chance de 0,58 de apresentar estado de saúde bom, e para não tabagistas com problemas cardíacos temos uma chance de 1,42.
+
+Logito 3:
+
+Por fim, a terceira equação modela a chance de estar no estado de saúde moderado em relação a estar na categoria ruim. Nesse caso, tabagistas com ausência de ploblemas cardíacos tem uma chance 0,27 de estarem com estado de saúde moderado em comparação a ruim. Para tabagistas e com ploblemas cardíacos, temos uma chance de 0,39 do indivíduo apresentar estado de saúde moderado. Para não tabagistas e sem problemas cardíacos, temos uma chance de 0,18 de apresentar estado de saúde como moderado, e para não tabagistas com problemas cardíacos temos uma chance de 0,26.
+
+De modo geral, observa-se que a presença de problema cardíaco está associada a maiores chances de o indivíduo apresentar melhores estados de saúde em todas as comparações entre categorias adjacentes, especialmente no grupo de tabagistas. Já o tabagismo, por si só, não demonstra um padrão claro: em algumas situações, está relacionado a maiores chances de bons estados de saúde, enquanto em outras aparece com chances reduzidas. 
+
 
