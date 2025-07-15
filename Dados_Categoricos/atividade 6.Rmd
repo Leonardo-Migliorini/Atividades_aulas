@@ -43,10 +43,12 @@ dados_prep <- data.frame(
 
 ### Representação gráfica dos dados
 
+Os gráficos apresentados descrevem a distribuição proporcional dos estados de saúde dos indivíduos, estratificados por uso de tabaco (sim ou não) e presença de problema cardíaco (sim ou não). Cada barra representa a proporção de casos por categoria de estado de saúde (Excelente, Bom, Moderado e Ruim).
+
 ```{r}
 # Ajustes dos fatores
-dados_prep$tabaco <- factor(dados_prep$tabaco, levels = c(1, 0), labels = c("Sim", "Não"))
-dados_prep$cardiaco <- factor(dados_prep$cardiaco, levels = c(1, 0), labels = c("Sim", "Não"))
+dados_prep$tabaco <- factor(dados_prep$tabaco, levels = c(1, 0), labels = c("Sim", "Nao"))
+dados_prep$cardiaco <- factor(dados_prep$cardiaco, levels = c(1, 0), labels = c("Sim", "Nao"))
 
 
 # Transformação em formato longo
@@ -55,13 +57,13 @@ dados_melt <- rename(dados_melt, Saude = variable, Proporcao = value)
 
 # Separando para tabagistas e não tabagistas
 dados_tabaco_sim <- subset(dados_melt, tabaco == "Sim")
-dados_tabaco_nao <- subset(dados_melt, tabaco == "Não")
+dados_tabaco_nao <- subset(dados_melt, tabaco == "Nao")
 
 # Função de plot
 plot_grafico <- function(dados) {
   ggplot(dados, aes(x = cardiaco, y = Proporcao, fill = Saude)) +
     geom_bar(stat = "identity", position = "dodge") +
-    labs(x = "Problema Cardíaco", y = "Proporção de casos", fill = "Estado de Saúde") +
+    labs(x = "Problema Cardiaco", y = "Proporcao de casos", fill = "Estado de Saude") +
     scale_fill_manual(values = c("Excelente" = "gray20", "Bom" = "gray40", "Moderado" = "gray60", "Ruim" = "gray80")) +
     ggtitle(paste("Uso de Tabaco:", unique(dados$tabaco))) +
     theme_bw() +
@@ -82,14 +84,457 @@ plot_grafico(dados_tabaco_nao)
 
 ```
 
+No grupo de indivíduos não tabagistas, observa-se que entre aqueles com problema cardíaco, a maioria se encontra em estado de saúde Moderado (42\%) e Bom (39\%). Por outro lado, entre os que não possuem problema cardíaco, 50\% estão em estado Bom, 25\% em Moderado, 21\% em Excelente e apenas 4\% em Ruim, o que sugere uma melhor condição geral de saúde nesse subgrupo.
+
+Já entre os indivíduos tabagistas, aqueles com problema cardíaco também apresentam maior concentração nos estados Moderado (42\%) e Bom (31\%), mas com aumento na proporção de casos classificados como Ruim (16\%) e leve aumento em Excelente (11\%). Para os que não possuem problema cardíaco, as proporções se mantêm semelhantes às do grupo sem tabaco.
+
+De modo geral, indivíduos sem problema cardíaco e que não utilizam tabaco tendem a apresentar melhor estado de saúde, com maiores proporções nas categorias Excelente e Bom, e menores proporções em Ruim. Já o uso de tabaco parece estar associado a um aumento das proporções de estados de saúde Moderado e Ruim, especialmente entre aqueles com problema cardíaco.
 
 ### Ajuste Modelo Logitos Cumulativos
 
-```{r}
+```{r, include = FALSE}
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+             cumulative(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+            cumulative(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ cardiaco,
+             cumulative(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ cardiaco,
+            cumulative(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+             cumulative(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+            cumulative(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
 
 ```
 
+Ajustamos os modelos para $X_1$, $X_2$ e para $X_1 + X_2$. Para o modelo somente com $X_1$, obteve-se um TRV = 14,89 ($p = \leq 0,001, \; g.l = 2$), fornecendo evidência a favor do modelos com chances não proporcionais para $X_1$. Para o modelo somente com $X_2$, obteve-se um TRV = 0,59 ($p = 0,74, \; g.l = 2$), fornecendo evidência a favor do modelos com chances proporcionais para $X_2$. Por fim, o modelo somente para $X_1 + X_2$ obteve-se um TRV = 15,11 ($p = 0,004, \; g.l = 4$), fornecendo evidência a favor do modelos com chances não proporcionais para a combinação de $X_1 + X_2$. Portanto, vamos adotar o MCPP para modelagem dos dados.
+
+
+```{r, include = FALSE}
+m0 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ 1,
+             cumulative(parallel=FALSE ~ tabaco,reverse=FALSE), dados)
+m1 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+             cumulative(parallel=FALSE ~ tabaco,reverse=FALSE), dados)
+m2 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+             cumulative(parallel=FALSE ~ tabaco,reverse=FALSE), dados)
+m3 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco * cardiaco,
+             cumulative(parallel=FALSE ~ tabaco,reverse=FALSE), dados)
+
+GL_ <- as.numeric(c(12-length(coef(m0)),
+                    12-length(coef(m1)),
+                    12-length(coef(m2)),
+                    12-length(coef(m3))))
+Deviance_ <- round(as.numeric(c(deviance(m0),
+                                deviance(m1),
+                                deviance(m2),
+                                deviance(m3)), digits = 2))
+TRV_ <- round(as.numeric(c(NA,
+                           deviance(m0)-deviance(m1),
+                           deviance(m1)-deviance(m2),
+                           deviance(m2)-deviance(m3))), digits = 2)
+AIC_ <- round(as.numeric(c(AIC(m0),AIC(m1),AIC(m2),AIC(m3)), digits = 2))
+Dif_ <- as.numeric(c(NA,
+                     df.residual(m0)-df.residual(m1),
+                     df.residual(m1)-df.residual(m2),
+                     df.residual(m2)-df.residual(m3)))
+
+P_v  <- round(as.numeric(c(NA,
+                           1-pchisq(TRV_[2],Dif_[2]),
+                           1-pchisq(TRV_[3],Dif_[3]),
+                           1-pchisq(TRV_[4],Dif_[4]))), digits = 3)
+
+tab_anova1 <- round(cbind(GL_, Deviance_, TRV_, Dif_, P_v, AIC_), digits = 4)
+colnames(tab_anova1) <- c("GL", "Deviance", "TRV", "Dif", "P-v", "AIC")
+rownames(tab_anova1) <- c("Nulo", "Z", "X|Z", "Z*X|Z,X")
+tab_anova1
+
+```
+
+Abaixo temos a análise de deviance para os MCPP encaixados.
+
+```{r}
+knitr::kable(tab_anova1)
+```
+
+Observa-se que o modelo 1 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável tabaco é importante para explicar o estado geral de saúde. O modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que a presença de problema cardíaco também é significativo para explicar o estado geral de saúde. Já a interação entre as variáveis foi não significativa.
+Ainda, o modelo 3 foi apresentou o menor valor para o AIC.Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include = FALSE}
+summary(m2)
+```
+
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y \leqslant 1 | x, z\right)}{P\left(Y > 1 | x,z\right)}\right) = -1,3 -0,13Z -1,03X,
+\end{equation}
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y \leqslant 2 | x, z\right)}{P\left(Y > 2 | x,z\right)}\right) = 0,90 -0,13Z -1,03X,
+\end{equation}
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y \leqslant 3 | x,z\right)}{P\left(Y > 3 | x,z\right)}\right) = 3,08 - 0,46Z -1,03X,
+\end{equation}
+
+em que $Z = 0$ indica não tabagista e $Z = 1$ indica tabagista, $X = 0$ indica ausência de problema cardíaco e $X = 1$ indica problema cardíaco.
+
+Abaixo, temos os gráficos para os resíduos de Pearson para o modelo 2. Podemos ver que todos os valores estão entre \([-2,2]\) indicando um bom ajuste do modelo. 
+
+```{r}
+# Análise de resíduos
+residuos <- residuals(m2, type = "pearson")
+data <- data.frame(Residuos = c(residuos[,1], residuos[,2]), Observacao = rep(1:length(residuos), 2))
+
+ggplot(data, aes(x = Observacao, y = Residuos)) +
+  geom_point(shape = 16) +
+  labs(x = "Índice", y = "Resíduos de Pearson", title = "Resíduos do Modelo MCPP2") +
+  scale_x_continuous(breaks = 1:length(residuos)) + ylim(-3, 3) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+#### Interpretação do ajuste:
+
+
 ### Ajuste Modelo Logito com categorias adjascentes
+
+```{r, include = FALSE}
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+             acat(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+            acat(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ cardiaco,
+             acat(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ cardiaco,
+            acat(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+             acat(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+            acat(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+```
+
+Ajustamos os modelos para $X_1$, $X_2$ e para $X_1 + X_2$. Para o modelo somente com $X_1$, obteve-se um TRV = 11,09 ($p = 0,003, \; g.l = 2$), fornecendo evidência a favor do modelos com chances não proporcionais para $X_1$. Para o modelo somente com $X_2$, obteve-se um TRV = 11,53 ($p = 0,003, \; g.l = 2$), fornecendo evidência a favor do modelos com chances não proporcionais para $X_2$. Por fim, o modelo somente para $X_1 + X_2$ obteve-se um TRV = 22,58 ($p \leq 0,001, \; g.l = 4$), fornecendo evidência a favor do modelos com chances não proporcionais para a combinação de $X_1 + X_2$. Portanto, vamos adotar o MCNP para modelagem dos dados.
+
+```{r, include = FALSE}
+m0 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ 1,
+             acat(parallel=FALSE ,reverse=FALSE), dados)
+m1 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+             acat(parallel=FALSE,reverse=FALSE), dados)
+m2 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+             acat(parallel=FALSE,reverse=FALSE), dados)
+m3 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco * cardiaco,
+             acat(parallel=FALSE,reverse=FALSE), dados)
+
+GL_ <- as.numeric(c(12-length(coef(m0)),
+                    12-length(coef(m1)),
+                    12-length(coef(m2)),
+                    12-length(coef(m3))))
+Deviance_ <- round(as.numeric(c(deviance(m0),
+                                deviance(m1),
+                                deviance(m2),
+                                deviance(m3)), digits = 2))
+TRV_ <- round(as.numeric(c(NA,
+                           deviance(m0)-deviance(m1),
+                           deviance(m1)-deviance(m2),
+                           deviance(m2)-deviance(m3))), digits = 2)
+AIC_ <- round(as.numeric(c(AIC(m0),AIC(m1),AIC(m2),AIC(m3)), digits = 2))
+Dif_ <- as.numeric(c(NA,
+                     df.residual(m0)-df.residual(m1),
+                     df.residual(m1)-df.residual(m2),
+                     df.residual(m2)-df.residual(m3)))
+
+P_v  <- round(as.numeric(c(NA,
+                           1-pchisq(TRV_[2],Dif_[2]),
+                           1-pchisq(TRV_[3],Dif_[3]),
+                           1-pchisq(TRV_[4],Dif_[4]))), digits = 3)
+
+tab_anova2 <- round(cbind(GL_, Deviance_, TRV_, Dif_, P_v, AIC_), digits = 4)
+colnames(tab_anova2) <- c("GL", "Deviance", "TRV", "Dif", "P-v", "AIC")
+rownames(tab_anova2) <- c("Nulo", "X1", "X2|X1", "X1*X2|X1,X2")
+```
+
+Abaixo temos a análise de deviance para os MCNP encaixados.
+
+```{r}
+knitr::kable(tab_anova2)
+```
+
+Observa-se que o modelo 1 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável tabaco é importante para explicar o estado geral de saúde. O modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que a presença de problema cardíaco também é significativo para explicar o estado geral de saúde. Já a interação entre as variáveis foi não significativa. Ainda, o modelo 3 foi apresentou o menor valor para o AIC. Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include = FALSE}
+summary(m2)
+```
+
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y = 1 | x\right)}{P\left(Y = 2 | x\right)}\right) = 0,84 + 0,08X_1 + 0,62X_2,
+\end{equation}
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y = 2 | x\right)}{P\left(Y = 3 | x\right)}\right) = 0,70 + 0,02X_1 + 0,82X_2,
+\end{equation}
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y = 3 | x\right)}{P\left(Y = 4 | x\right)}\right) = -1,71 + 0,43X_1 + 0,35X_2,
+\end{equation}
+
+em que $X_1 = 0$ indica não tabagista e $X_1 = 1$ indica tabagista, $X_2 = 0$ indica ausência de problema cardíaco e $X_2 = 1$ indica problema cardíaco.
+
+Abaixo, temos os gráficos para os resíduos de Pearson para o modelo 2. Podemos ver que todos os valores estão entre \([-2,5;2,5]\) indicando um bom ajuste do modelo. 
+
+```{r}
+# Análise de resíduos
+residuos <- residuals(m2, type = "pearson")
+data <- data.frame(Residuos = c(residuos[,1], residuos[,2]), Observacao = rep(1:length(residuos), 2))
+
+ggplot(data, aes(x = Observacao, y = Residuos)) +
+  geom_point(shape = 16) +
+  labs(x = "Índice", y = "Resíduos de Pearson", title = "Resíduos do Modelo MCPP2") +
+  scale_x_continuous(breaks = 1:length(residuos)) + ylim(-3, 3) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+#### Interpretação do ajuste:
 
 
 ### Ajuste Modelo Logito de razão contínua
+
+```{r, include = FALSE}
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+             cratio(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+            cratio(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ cardiaco,
+             cratio(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ cardiaco,
+            cratio(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+
+# Modelo chances não proporcionais
+mcnp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+             cratio(parallel=FALSE,reverse=FALSE), dados)
+summary(mcnp)
+
+# Modelo de chances proporcionais
+mcp <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+            cratio(parallel=TRUE,reverse=FALSE), dados) 
+
+summary(mcp)
+
+# Comparação dos modelos
+TRV <- 2*(logLik(mcnp) - logLik(mcp))
+gl <- length(coef(mcnp)) - length(coef(mcp))
+p <- 1-pchisq(TRV,gl)
+cbind(TRV, gl, p)
+
+lrtest(mcnp, mcp)
+```
+
+Ajustamos os modelos para $X_1$, $X_2$ e para $X_1 + X_2$. Para o modelo somente com $X_1$, obteve-se um TRV = 9,08 ($p = 0,001, \; g.l = 2$), fornecendo evidência a favor do modelos com chances não proporcionais para $X_1$. Para o modelo somente com $X_2$, obteve-se um TRV = 28,21 ($p \leq 0,001, \; g.l = 2$), fornecendo evidência a favor do modelos com chances não proporcionais para $X_2$. Por fim, o modelo somente para $X_1 + X_2$ obteve-se um TRV = 37,07 ($p \leq 0,001, \; g.l = 4$), fornecendo evidência a favor do modelos com chances não proporcionais para a combinação de $X_1 + X_2$. Portanto, vamos adotar o MCNP para modelagem dos dados.
+
+```{r, include = FALSE}
+m0 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ 1,
+             cratio(parallel=FALSE ,reverse=FALSE), dados)
+m1 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco,
+             cratio(parallel=FALSE,reverse=FALSE), dados)
+m2 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco + cardiaco,
+             cratio(parallel=FALSE,reverse=FALSE), dados)
+m3 <- vglm(cbind(Excelente,Bom,Moderado,Ruim) ~ tabaco * cardiaco,
+             cratio(parallel=FALSE,reverse=FALSE), dados)
+
+GL_ <- as.numeric(c(12-length(coef(m0)),
+                    12-length(coef(m1)),
+                    12-length(coef(m2)),
+                    12-length(coef(m3))))
+Deviance_ <- round(as.numeric(c(deviance(m0),
+                                deviance(m1),
+                                deviance(m2),
+                                deviance(m3)), digits = 2))
+TRV_ <- round(as.numeric(c(NA,
+                           deviance(m0)-deviance(m1),
+                           deviance(m1)-deviance(m2),
+                           deviance(m2)-deviance(m3))), digits = 2)
+AIC_ <- round(as.numeric(c(AIC(m0),AIC(m1),AIC(m2),AIC(m3)), digits = 2))
+Dif_ <- as.numeric(c(NA,
+                     df.residual(m0)-df.residual(m1),
+                     df.residual(m1)-df.residual(m2),
+                     df.residual(m2)-df.residual(m3)))
+
+P_v  <- round(as.numeric(c(NA,
+                           1-pchisq(TRV_[2],Dif_[2]),
+                           1-pchisq(TRV_[3],Dif_[3]),
+                           1-pchisq(TRV_[4],Dif_[4]))), digits = 3)
+
+tab_anova3 <- round(cbind(GL_, Deviance_, TRV_, Dif_, P_v, AIC_), digits = 4)
+colnames(tab_anova3) <- c("GL", "Deviance", "TRV", "Dif", "P-v", "AIC")
+rownames(tab_anova3) <- c("Nulo", "X1", "X2|X1", "X1*X2|X1,X2")
+```
+
+Abaixo temos a análise de deviance para os MCNP encaixados.
+
+```{r}
+knitr::kable(tab_anova3)
+```
+
+Observa-se que o modelo 1 apresentou diferença significativa no deviance em relação ao modelo nulo, indicando que a variável tabaco é importante para explicar o estado geral de saúde. O modelo 3 teve diferença significativa no deviance em relação ao modelo 2, indicando que a presença de problema cardíaco também é significativo para explicar o estado geral de saúde. Já a interação entre as variáveis foi não significativa. Ainda, o modelo 3 foi apresentou o menor valor para o AIC. Portanto, o modelo escolhido ao final é o modelo 3, cuja estrutura dos logitos é expressa por:
+
+```{r, include = FALSE}
+summary(m2)
+```
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y = 1 | x\right)}{P\left(Y \geqslant 1 | x\right)}\right) = 1,30 + 0,12X_1 + 1,04X_2,
+\end{equation}
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y = 2 | x\right)}{P\left(Y \geqslant 2 | x\right)}\right) = -0,54 + 0,10X_1 + 0,89X_2,
+\end{equation}
+
+\begin{equation}
+	\log\left(\dfrac{P\left(Y = 3 | x\right)}{P\left(Y \geqslant 3 | x\right)}\right) = -1,71 + 0,42X_1 + 0,35X_2,
+\end{equation}
+
+em que $X_1 = 0$ indica não tabagista e $X_1 = 1$ indica tabagista, $X_2 = 0$ indica ausência de problema cardíaco e $X_2 = 1$ indica problema cardíaco.
+
+Abaixo, temos os gráficos para os resíduos de Pearson para o modelo 2. Podemos ver que todos os valores estão entre \([-2;2]\) indicando um bom ajuste do modelo. 
+
+```{r}
+# Análise de resíduos
+residuos <- residuals(m2, type = "pearson")
+data <- data.frame(Residuos = c(residuos[,1], residuos[,2]), Observacao = rep(1:length(residuos), 2))
+
+ggplot(data, aes(x = Observacao, y = Residuos)) +
+  geom_point(shape = 16) +
+  labs(x = "Índice", y = "Resíduos de Pearson", title = "Resíduos do Modelo MCPP2") +
+  scale_x_continuous(breaks = 1:length(residuos)) + ylim(-3, 3) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+```
+
+#### Interpretação do ajuste:
+
