@@ -71,7 +71,7 @@ sexp <- exp(-t)
 par(mfrow = c(1, 2))
 
 # Plot dos resíduos vs função taxa de falha acumulada
-# Deseja-se observer uma reta com inclinação 1
+# Deseja-se observar uma reta com inclinação 1
 plot(st, sexp,
   xlab = "S(ei): Kaplan-Meier",
   ylab = "S(ei): Exponencial padrão",
