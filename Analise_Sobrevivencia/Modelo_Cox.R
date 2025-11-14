@@ -50,13 +50,16 @@ fit2 <- coxph(Surv(tempos, cens) ~ factor(estagio),
 )
 
 # Covariáveis: Estágio e Idade
-fit3 <- coxph(Surv(tempos, cens) ~ factor(estagio) + idade,
+fit3 <- coxph(Surv(tempos, cens) ~ estagioII + estagioIII + estagioIV + idade,
   data = laringe,
   x = T, method = "breslow"
 )
 
 # Covariáveis: Estágio e Idade e interação (Estágio * Idade)
-fit4 <- coxph(Surv(tempos, cens) ~ factor(estagio) + idade + factor(estagio) * idade,
+x5 <- estagioII * laringe$idade
+x6 <- estagioIII * laringe$idade
+x7 <- estagioIV * laringe$idade
+fit4 <- coxph(Surv(tempos, cens) ~ estagioII + estagioIII + estagioIV + idade + x5 + x6 + x7,
   data = laringe, x = T, method = "breslow"
 )
 
@@ -71,3 +74,72 @@ TRV3 <- 2 * (fit3$loglik[2] - fit1$loglik[1])
 # testando se as covariável X1 é significativa
 TRV2 <- 2 * (fit2$loglik[2] - fit1$loglik[1])
 1 - pchisq(TRV2, 3)
+
+summary(fit3)
+summary(fit4)
+
+# Análise de Resíduos
+
+# Os resíduos devem seguir uma exponencial padrão
+resm <- resid(fit4, type = "martingale")
+res <- laringe$cens - resm # resíduo de cox-Snell
+ekm <- survfit(Surv(res, laringe$cens) ~ 1)
+summary(ekm)
+
+plot(ekm,
+  mark.time = F, conf.int = F, xlab = "Resíduos",
+  ylab = "S(e) estimada"
+)
+res <- sort(res)
+exp1 <- exp(-res)
+lines(res, exp1, lty = 3)
+legend(1, 0.8,
+  lty = c(1, 3), c("Kaplan Meier", "Exponencial(1)"),
+  lwd = 1, bty = "n", cex = 0.7
+)
+
+# Deve formar uma linha aproximadamente reta
+st <- ekm$surv
+t <- ekm$time
+sexp1 <- exp(-t)
+plot(st, sexp1,
+  xlab = "S(e): Kaplan-Meier",
+  ylab = "S(e): Exponencial(1)", pch = 16
+) 
+
+# Suposição de riscos proporcionais
+
+# Ho: riscos proporcionais
+test.ph4 <- cox.zph(fit4, transform = "identity")
+# Logo somente para estagioIII não temos evidências de riscos proporcionais
+
+ggcoxdiagnostics(fit4,
+  type = "scaledsch", linear.predictions = FALSE,
+  ggtheme = theme_bw()
+)
+
+# Ho: riscos proporcionais
+test.ph3 <- cox.zph(fit3, transform = "identity")
+# Logo, temos evidência de riscos proporcionais para todas as variáveis
+
+ggcoxdiagnostics(fit3,
+  type = "scaledsch", linear.predictions = FALSE,
+  ggtheme = theme_bw()
+)
+
+
+# Avaliação dos resíduos - Pontos atípicos
+ggcoxdiagnostics(fit4,
+  type = "deviance",
+  linear.predictions = TRUE, ggtheme = theme_bw()
+)
+ggcoxdiagnostics(fit4,
+  type = "martingale",
+  linear.predictions = TRUE, ggtheme = theme_bw()
+)
+
+# Avaliação dos resíduos - Pontos influentes
+ggcoxdiagnostics(fit4,
+  type = "dfbetas",
+  linear.predictions = FALSE, ggtheme = theme_bw()
+)
